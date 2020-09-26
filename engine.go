@@ -1,9 +1,11 @@
-package DinGo_ChessEngine
+package main
 
-func engine() (frEng, toEng chan string){
-	tell("string info Hello from engine")
+func engine() (frEng, toEng chan string) {
+	tell("info string stopHello from engine")
+	frEng = make(chan string)
+	toEng = make(chan string)
 	go func() {
-		for cmd := range toEng{
+		for cmd := range toEng {
 			switch cmd {
 			case "stop":
 			case "quit":
