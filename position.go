@@ -51,6 +51,22 @@ func (b *boardStruct) clear() {
 	}
 }
 
+func (b *boardStruct) move(fr, to, pr int) {
+	// TODO 1. move in board
+}
+func (b *boardStruct) setSq(p12, s int) {
+	// TO IMPLEMENT
+	b.sq[s] = p12
+	if p12 == empty {
+		b.wbBB[WHITE].clr(uint(s))
+		b.wbBB[BLACK].clr(uint(s))
+		for p := 0; p < nP; p++ {
+			b.pieceBB[p].clr(uint(s))
+		}
+	}
+
+}
+
 func (b *boardStruct) newGame() {
 	b.stm = WHITE
 	b.clear()
@@ -151,12 +167,46 @@ func parseMVS(mvstr string) {
 		// fmt.Println("make move", mv)
 		mv = trim(mv)
 		if len(mv) < 4 {
+			tell("info string ", mv, " in the position command is not a correct move")
 			return
 		}
 		// is fr square is ok?
+		fr, ok := fen2Sq2Int[mv[:2]]
+		if !ok {
+			tell("info string ", mv, " in the position command is not a correct fr square")
+			return
+		}
+		p12 := board.sq[fr]
+		if p12 == empty {
+			tell("info string ", mv, " in the position command. fr_sq is not an empty suare")
+			return
+		}
+
+		pCol := p12Color(p12)
+		if pCol != board.stm {
+			tell("info string ", mv, " in the position command. fr piece has the wrong color")
+			return
+		}
+
 		// is to square is ok?
-		// is the piece in frsq ok?
+		to, ok := femSq2Int[mv[2:4]]
+		if !ok {
+			tell("info string ", mv, " in the position command is not a correct to square")
+			return
+		}
+
 		// is the prom piece ok?
+		pr := 0
+		if len(mv) == 5 { //prom
+			if !strings.ContainsAny(mv[4:5], "qrbn") {
+				tell("info string promotion piece in ", mv, " in the position command is not a correct --MISS THE REST--")
+				return
+			}
+
+			pr = fen2Int(mv[4:5])
+			pr = pc2P12(pr, board.stm)
+		}
+		board.move(fr, to, pr)
 	}
 }
 
