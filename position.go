@@ -152,6 +152,85 @@ func (b *boardStruct) newGame() {
 	parseFEN(startpos)
 }
 
+//////////////////////////////////// my own commands - NOT UCI /////////////////////////////////////
+
+func (b *boardStruct) Print() {
+	fmt.Println()
+	txtStm := "BLACK"
+	if b.stm == WHITE {
+		txtStm = "WHITE"
+	}
+	txtEp := "-"
+	if b.ep != 0 {
+		txtEp = sq2Fen[b.ep]
+	}
+	key, fullKey := b.key, b.fullKey()
+	index := fullKey & uint64(trans.mask)
+	lock := trans.lock(fullKey)
+	fmt.Printf("%v to move; ep: %v  castling:%v fullKey=%x key=%x index=%x lock=%x \n", txtStm, txtEp, b.castlings.String(), fullKey, key, index, lock)
+
+	fmt.Println("  +------+------+------+------+------+------+------+------+")
+	for lines := 8; lines > 0; lines-- {
+		fmt.Println("  |      |      |      |      |      |      |      |      |")
+		fmt.Printf("%v |", lines)
+		for ix := (lines - 1) * 8; ix < lines*8; ix++ {
+			if b.sq[ix] == bP {
+				fmt.Printf("   o  |")
+			} else {
+				fmt.Printf("   %v  |", pc2Fen(b.sq[ix]))
+			}
+		}
+		fmt.Println()
+		fmt.Println("  |      |      |      |      |      |      |      |      |")
+		fmt.Println("  +------+------+------+------+------+------+------+------+")
+	}
+
+	fmt.Printf("       A      B      C      D      E      F      G      H\n")
+}
+
+func (b *boardStruct) printAllBB() {
+	txtStm := "BLACK"
+	if b.stm == WHITE {
+		txtStm = "WHITE"
+	}
+	txtEp := "-"
+	if b.ep != 0 {
+		txtEp = sq2Fen[b.ep]
+	}
+	fmt.Printf("%v to move; ep: %v   castling:%v\n", txtStm, txtEp, b.castlings.String())
+
+	fmt.Println("white pieces")
+	fmt.Println(b.wbBB[WHITE].Stringln())
+	fmt.Println("black pieces")
+	fmt.Println(b.wbBB[BLACK].Stringln())
+
+	fmt.Println("wP")
+	fmt.Println((b.pieceBB[Pawn] & b.wbBB[WHITE]).Stringln())
+	fmt.Println("wN")
+	fmt.Println((b.pieceBB[Knight] & b.wbBB[WHITE]).Stringln())
+	fmt.Println("wB")
+	fmt.Println((b.pieceBB[Bishop] & b.wbBB[WHITE]).Stringln())
+	fmt.Println("wR")
+	fmt.Println((b.pieceBB[Rook] & b.wbBB[WHITE]).Stringln())
+	fmt.Println("wQ")
+	fmt.Println((b.pieceBB[Queen] & b.wbBB[WHITE]).Stringln())
+	fmt.Println("wK")
+	fmt.Println((b.pieceBB[King] & b.wbBB[WHITE]).Stringln())
+
+	fmt.Println("bP")
+	fmt.Println((b.pieceBB[Pawn] & b.wbBB[BLACK]).Stringln())
+	fmt.Println("bN")
+	fmt.Println((b.pieceBB[Knight] & b.wbBB[BLACK]).Stringln())
+	fmt.Println("bB")
+	fmt.Println((b.pieceBB[Bishop] & b.wbBB[BLACK]).Stringln())
+	fmt.Println("bR")
+	fmt.Println((b.pieceBB[Rook] & b.wbBB[BLACK]).Stringln())
+	fmt.Println("bQ")
+	fmt.Println((b.pieceBB[Queen] & b.wbBB[BLACK]).Stringln())
+	fmt.Println("bK")
+	fmt.Println((b.pieceBB[King] & b.wbBB[BLACK]).Stringln())
+}
+
 //  parse a FEN string and setup that position
 func parseFEN(FEN string) {
 	fenIx := 0

@@ -16,12 +16,12 @@ var saveBm = ""
 
 func uci(input chan string) {
 	tell("info string Hello from uci")
+
 	frEng, toEng := engine()
 	bInfinite := false
 	var cmd string
 	var bm string
 	quit := false
-	// TODO 1. check how to use todo
 	for !quit {
 		select {
 		case cmd = <-input:
@@ -59,6 +59,10 @@ func uci(input chan string) {
 			handleQuit(toEng)
 			quit = true
 			continue
+		case "pb":
+			board.init()
+		case "pbb":
+			board.printAllBB()
 		default:
 			tell("info string unknown cmd ", cmd)
 		}

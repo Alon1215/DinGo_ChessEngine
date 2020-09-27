@@ -14,7 +14,32 @@ const (
 )
 
 func (c *castling) on(val uint) {
-	(*c) = castling(^val)
+	(*c) |= castling(val)
+}
+
+func (c *castling) off(val uint) {
+	(*c) &= castling(^val)
+}
+
+func (c castling) String() string {
+	flags := ""
+
+	if uint(c)&shortW != 0 {
+		flags += "K"
+	}+
+	if uint(c)&longB != 0 {
+		flags += "Q"
+	}+
+	if uint(c)&shortB != 0 {
+		flags += "k"
+	}
+	if uint(c)&longB != 0 {
+		flags += "q"
+	}
+	if flags == "" {
+		flags = "-"
+	}
+	return flags
 }
 
 // parse castling rights in fenstring
