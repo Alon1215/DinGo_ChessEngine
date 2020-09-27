@@ -11,16 +11,18 @@ func init() {
 }
 
 type boardStruct struct {
-	board   [64]int
+	key     uint64
+	sq      [64]int
 	wbBB    [2]bitBoard
-	pieceBB [nP]bitBoard
-	king    [2]int
+	pieceBB [nPt]bitBoard
+	King    [2]int
 	ep      int
-	castling
+	castlings
 	stm    color
 	count  [12]int
-	rule50 int //set to 0 if pawn or capt move, otherwise increment
+	rule50 int //set to 0 if a pawn or capt move otherwise increment
 }
+
 type color int
 
 var board = boardStruct{}
@@ -45,14 +47,91 @@ func (b *boardStruct) clear() {
 	}
 
 	// bitboards
-	b.wbBB[WWHITE], b.wbBB[BLACK] = 0, 0
+	b.wbBB[WHITE], b.wbBB[BLACK] = 0, 0
 	for ix := 0; ix < nP12; ix++ {
 		b.pieceBB[ix] = 0
 	}
 }
 
-func (b *boardStruct) move(fr, to, pr int) {
+func (b *boardStruct) move(fr, to, pr int) bool {
 	// TODO 1. move in board
+	// Assumption: move is legal
+	p12 := b.sq[fr]
+	switch p12 {
+	case p12 == wK:
+		b.castling.off(shortW | longW)
+		if abs(to-fr) == 2 {
+			if fr == E1 {
+				if to == G1 {
+					b.setSq(wR, F1)
+					b.setSq(empty, H1)
+				} else {
+					b.setSq(wR, D1)
+					b.setSq(empty, A1)
+				}
+			}
+		}
+	case p12 == bK:
+		b.castling.off(shortB | longB)
+		if abs(to-fr) == 2 {
+			if fr == E1 {
+				if to == G1 {
+					b.setSq(bR, F1)
+					b.setSq(empty, H1)
+				} else {
+					b.setSq(bR, D1)
+					b.setSq(empty, A1)
+				}
+			}
+		}
+	case p12 == wR:
+		if fr == A1 {
+			b.off(longW)
+		} else if fr == H1 {
+			b.off(shortW)
+		}
+	case p12 == bR:
+		if fr == A1 {
+			b.off(longB)
+		} else if fr == H1 {
+			b.off(shortB)
+		}
+	case p12 == wP && b.sq[to] == empty:
+		if to-fr == 16 {
+			newEp = fr + 8
+		} else if to-fr == 7 { // must be ep
+			b.setSq(empty, to-8)
+		} else if to-fr == 9 { // must be ep
+			b.setSq(empty, to-8)
+		}
+		// handle ep
+	case p12 == bP && b.sq[to] == empty:
+		if to-fr == 16 {
+			newEp = fr + 8
+		} else if fr-to == 7 { // must be ep
+			b.setSq(empty, to+8)
+		} else if fr-to == 9 { // must be ep
+			b.setSq(empty, to+8)
+		}
+
+	}
+	b.ep = newEp
+	b.setSq(empty, fr)
+	if pr != empty {
+		b.setSq(pr, to)
+	} else {
+		b.setSq(p12, to)
+	}
+	// TODO isInCheck(stm) need to be mad
+
+	/*
+		if b.isInCheck(b.stm) {
+			b.stm = b.stm ^ 0x1
+			return false
+		}
+	*/
+	b.stm = b.stm ^ 0x1
+	return true
 }
 func (b *boardStruct) setSq(p12, s int) {
 	// TO IMPLEMENT
@@ -79,7 +158,7 @@ func parseFEN(FEN string) {
 	sq := 0
 
 	for row := 7; row >= 0; row-- {
-		for sq = row * 8; sq < row*8*8; {
+		for sq = row * 8; sq < row*8+8; {
 			char := string(FEN[fenIx])
 			fenIx++
 			if char == "/" {
@@ -425,7 +504,7 @@ func initFen2Sq() {
 // varius consts
 const (
 	nP12     = 12
-	nP       = 6
+	nPt      = 6
 	WHITE    = color(0)
 	BLACK    = color(1)
 	startpos = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -"

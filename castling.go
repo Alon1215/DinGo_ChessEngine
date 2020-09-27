@@ -4,15 +4,20 @@ import (
 	"strings"
 )
 
-type castling unit
+type castling uint
 
 const (
-	shortW = unit(0x1) // white can casle short
-	longW  = unit(0x2) // white can castle long
-	shortB = unit(0x4) // black can casle short
-	longB  = unit(0x8) // black can castle long
+	shortW = uint(0x1) // white can casle short
+	longW  = uint(0x2) // white can castle long
+	shortB = uint(0x4) // black can casle short
+	longB  = uint(0x8) // black can castle long
 )
 
+func (c *castling) on(val uint) {
+	(*c) = castling(^val)
+}
+
+// parse castling rights in fenstring
 func parseCastling(fenCastl string) castling {
 	c := uint(0)
 	if fenCastl == "-" {
