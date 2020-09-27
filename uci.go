@@ -21,7 +21,7 @@ func uci(input chan string) {
 	var cmd string
 	var bm string
 	quit := false
-
+	// TODO 1. check how to use todo
 	for !quit {
 		select {
 		case cmd = <-input:
@@ -113,7 +113,8 @@ func handleSetOption(words []string) {
 }
 
 func handleNewgame(option []string) {
-	tell("info string ucinewgame not implemented")
+	// tell("info string ucinewgame not implemented")
+	board.newGame()
 }
 
 func handlePosition(cmd string) {
@@ -129,7 +130,7 @@ func handlePosition(cmd string) {
 
 	alt := strings.Split(parts[0], " ")
 	alt[0] = trim(alt[0])
-	tell("info string position ", alt[0], " not implemented")
+	//tell("info string position ", alt[0], " not implemented")
 
 	if alt[0] == "startpos" {
 		parts[0] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -149,11 +150,13 @@ func handlePosition(cmd string) {
 
 	if len(parts) == 2 {
 		parts[1] = low(trim(parts[1]))
-		//fmt.Printf("info string parse %#v\n", parts[1])
+		fmt.Printf("info string parse %#v\n", parts[1])
 		parseMvs(parts[1])
 	}
 }
 
+// go searchmoves <mov1-moveii</ponder/wtime <ms>/ btime <ms>/ bi -----MISS THE REST----
+//		movestogo <x>/depth <x>/nodes <x>/movetime <ms>/mate <x>/infinite
 func handleGo(words []string) {
 	if len(words) > 1 {
 		words[1] = trim(low(words[1]))
