@@ -12,23 +12,28 @@ var tell = mainTell // set default tell
 var trim = strings.TrimSpace
 var low = strings.ToLower
 
-func uci(frGUI chan string, myTell func(text ...string)) {
-	tell = myTell
+var saveBm = ""
+
+func uci(input chan string) {
 	tell("info string Hello from uci")
 	frEng, toEng := engine()
+	bInfinite := false
+	var cmd string
+	var bm string
 	quit := false
-	cmd := ""
-	words := []string{}
-	bm := ""
+
 	for !quit {
 		select {
-		case cmd = <-frGUI:
-			words = strings.Split(cmd, " ")
+		case cmd = <-input:
+			//words = strings.Split(cmd, " ")
+			// tell("info string uci got ", cmd, " command") //check if it is the write line
 		case bm = <-frEng:
-			handleBm(bm)
+			handleBm(bm, bInfinite)
 			continue
 		}
+		words := strings.Split(cmd, " ")
 		words[0] = trim(low(words[0]))
+
 		switch words[0] {
 		case "uci":
 			handleUci()
@@ -37,9 +42,9 @@ func uci(frGUI chan string, myTell func(text ...string)) {
 		case "isready":
 			handleIsReady()
 		case "ucinewgame":
-			handleIsNewgame()
+			handleNewgame()
 		case "position":
-			handlePosition(words)
+			handlePosition(cmd)
 		case "debug":
 			handleDebug(words)
 		case "register":
@@ -52,11 +57,14 @@ func uci(frGUI chan string, myTell func(text ...string)) {
 			handleStop(toEng, &bInfinite)
 		case "quit", "q":
 			handleQuit(toEng)
-			//quit = true
+			quit = true
 			continue
+		default:
+			tell("info string unknown cmd ", cmd)
 		}
 
 	}
+	tell("info string leaving uci()")
 }
 
 func handleUci() {
@@ -72,6 +80,20 @@ func handleIsReady() {
 	tell("readyok")
 }
 
+func handleStop(toEng chan string, bInfinite bool) {
+	if *bInfinite {
+		if saveBm != "" {
+			tell(saveBm)
+			saveBm = ""
+		}
+
+		toEng <- "stop"
+		*bInfinite = true
+	}
+	tell("info string stop not implemented")
+}
+
+// handleQuit not really necessary
 func handleQuit(toEng chan string) {
 	toEng <- "stop"
 }
@@ -84,21 +106,9 @@ func handleBm(bm string, bInfinite bool) {
 	tell(bm)
 }
 
-func handleStop(toEng chan string, bInfinite bool) {
-	if *bInfinite {
-		if saveBm != "" {
-			tell(saveBm)
-			saveBm = ""
-		}
-
-		toEng <- "stop"
-		*bInfinite = true
-	}
-}
-
 // Not impleneted uci commands:
+
 func handleSetOption(words []string) {
-	tell("info string set option ", strings.Join(option, " "))
 	tell("info string not implemented")
 }
 
@@ -106,17 +116,41 @@ func handleNewgame(option []string) {
 	tell("info string ucinewgame not implemented")
 }
 
-func handlePosition(words []string) {
-	if len(words) > 1 {
-		words[1] = trim(low(words[1]))
-		switch words[1] {
-		case "startpos":
-			tell("info string position startpos not implemented")
-		case "fen":
-			tell("info string position fen not implemented")
-		default:
-			tell("info string position ", words[1], " not implemented")
-		}
+func handlePosition(cmd string) {
+	// position [fen <fenstring> | startpos] moves <move1> ... <movei>
+
+	cmd = trim(strings.TrimPrefix(cmd, "position"))
+	parts := strings.Split(cmd, "moves")
+	if len(cmd) == 0 || len(parts) > 2 {
+		err := fmt.Errorf("%v wrong length=%v", parts, len(parts)) // CHECK IF RIGHT
+		tell("info string Error", fmt.Sprint(err))
+		return
+	}
+
+	alt := strings.Split(parts[0], " ")
+	alt[0] = trim(alt[0])
+	tell("info string position ", alt[0], " not implemented")
+
+	if alt[0] == "startpos" {
+		parts[0] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+	} else if alt[0] == "fen" {
+		parts[0] = trim(strings.TrimPrefix(parts[0], "fen"))
+	} else {
+		err := fmt.Errorf("%#v must be %#v or %#v", alt[0], "fen", "startpos")
+		tell("info string Error", err.Error())
+		return
+	}
+	parts[0] = strings.Join(alt, " ")
+	// Now parts[0] is the fen-string only
+
+	// start the parsing
+	//fmt.Printf("info string parse %#v\n", parts[0])
+	parseFEN(parts[0])
+
+	if len(parts) == 2 {
+		parts[1] = low(trim(parts[1]))
+		//fmt.Printf("info string parse %#v\n", parts[1])
+		parseMvs(parts[1])
 	}
 }
 
@@ -167,6 +201,8 @@ func handleDebug(option []string) {
 func handleRegister(option []string) {
 	tell("info string register not implemented")
 }
+
+//------------------------------------------------------
 
 func mainTell(text ...string) {
 	toGUI := ""
