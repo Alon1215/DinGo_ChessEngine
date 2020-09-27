@@ -26,10 +26,10 @@ func (c castling) String() string {
 
 	if uint(c)&shortW != 0 {
 		flags += "K"
-	}+
+	}
 	if uint(c)&longB != 0 {
 		flags += "Q"
-	}+
+	}
 	if uint(c)&shortB != 0 {
 		flags += "k"
 	}

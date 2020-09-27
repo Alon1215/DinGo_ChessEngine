@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -162,6 +163,8 @@ func handlePosition(cmd string) {
 // go searchmoves <mov1-moveii</ponder/wtime <ms>/ btime <ms>/ bi -----MISS THE REST----
 //		movestogo <x>/depth <x>/nodes <x>/movetime <ms>/mate <x>/infinite
 func handleGo(words []string) {
+	// TODO: Right now can only handle one of them at a time. We need to be able to mix them
+	limits.init()
 	if len(words) > 1 {
 		words[1] = trim(low(words[1]))
 		switch words[1] {
@@ -180,20 +183,42 @@ func handleGo(words []string) {
 		case "movestogo":
 			tell("info string go movestogo not implemented")
 		case "depth":
-			tell("info string go depth not implemented")
+			d := -1
+			err := error(nil)
+			if len(words) >= 3 {
+				d, err = strconv.Atoi(words[2])
+			}
+			if d < 0 || err != nil {
+				tell("info string depth not numeric")
+				return
+			}
+			limits.setDepth(d)
+			toEng <- true
 		case "nodes":
 			tell("info string go nodes not implemented")
 		case "movetime":
-			tell("info string go movetime not implemented")
-		case "mate":
+			mt, err := strconv.Atoi(words[2])
+			if err != nil {
+				tell("info string ", words[2], " not numeric")
+				return
+			}
+			limits.setMoveTime(mt)
+			toEng <- true
+		case "mate": // mate <x>  mate in x moves
 			tell("info string go mate not implemented")
 		case "infinite":
-			tell("info string go infinite not implemented")
+			limits.setInfinite(true)
+			toEng <- true
+		case "register":
+			tell("info string go register not implemented")
 		default:
 			tell("info string go ", words[1], " not implemented")
 		}
 	} else {
-		tell("info string go not implemented")
+		// tell("info string go not implemented")
+		tell("info string suppose go infinite")
+		limits.setInfinite(true)
+		toEng <- true
 	}
 }
 

@@ -7,7 +7,7 @@ import (
 )
 
 func init() {
-	initFenSq2Int()
+	initFen2Sq()
 }
 
 type boardStruct struct {
@@ -17,7 +17,7 @@ type boardStruct struct {
 	pieceBB [nPt]bitBoard
 	King    [2]int
 	ep      int
-	castlings
+	castling
 	stm    color
 	count  [12]int
 	rule50 int //set to 0 if a pawn or capt move otherwise increment
@@ -54,10 +54,11 @@ func (b *boardStruct) clear() {
 }
 
 func (b *boardStruct) move(fr, to, pr int) bool {
-	// TODO 1. move in board
+	newEp := 0
+
 	// Assumption: move is legal
 	p12 := b.sq[fr]
-	switch p12 {
+	switch {
 	case p12 == wK:
 		b.castling.off(shortW | longW)
 		if abs(to-fr) == 2 {
@@ -97,11 +98,11 @@ func (b *boardStruct) move(fr, to, pr int) bool {
 			b.off(shortB)
 		}
 	case p12 == wP && b.sq[to] == empty:
-		if to-fr == 16 {
+		if (to - fr) == 16 {
 			newEp = fr + 8
-		} else if to-fr == 7 { // must be ep
+		} else if (to - fr) == 7 { // must be ep
 			b.setSq(empty, to-8)
-		} else if to-fr == 9 { // must be ep
+		} else if (to - fr) == 9 { // must be ep
 			b.setSq(empty, to-8)
 		}
 		// handle ep
@@ -139,7 +140,7 @@ func (b *boardStruct) setSq(p12, s int) {
 	if p12 == empty {
 		b.wbBB[WHITE].clr(uint(s))
 		b.wbBB[BLACK].clr(uint(s))
-		for p := 0; p < nP; p++ {
+		for p := 0; p < nPt; p++ {
 			b.pieceBB[p].clr(uint(s))
 		}
 	}
@@ -150,6 +151,17 @@ func (b *boardStruct) newGame() {
 	b.stm = WHITE
 	b.clear()
 	parseFEN(startpos)
+}
+
+func (b *boardStruct) genRookMoves() {
+	sd := b.stm
+	frBB := b.pieceBB[Rook] & b.abBB[sd]
+	p12 := pc2P12(Rook, sd)
+	b.genFrMoves(p12, frBB, &ml)
+}
+
+func (b *boardStruct) genFrMoves(p12 int, frBB bitBoard, ml *moveList) {
+
 }
 
 //////////////////////////////////// my own commands - NOT UCI /////////////////////////////////////
