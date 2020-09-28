@@ -27,7 +27,7 @@ func (b *bitBoard) clr(pos uint) {
 	*b &= bitBoard(^(uint64(1) << pos))
 }
 
-func (b *bitBoard) firstone() int {
+func (b *bitBoard) firstOne() int {
 	bit := bits.TrailingZeros64(uint64(*b))
 	if bit == 64 {
 		return 64

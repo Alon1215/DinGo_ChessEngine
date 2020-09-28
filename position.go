@@ -154,10 +154,74 @@ func (b *boardStruct) newGame() {
 }
 
 func (b *boardStruct) genRookMoves() {
-	sd := b.stm
-	frBB := b.pieceBB[Rook] & b.abBB[sd]
-	p12 := pc2P12(Rook, sd)
-	b.genFrMoves(p12, frBB, &ml)
+	// TODO: generate rook ,oves with simple method - benchmark
+	// TODO: genereate took moves with simple method
+	// TODO: explain magic numbers/bitboards
+	// TODO: create tables and methods to use magic numbers
+	// TODO: generate rook moves with magic bitBoards
+	allRBB := b.pieceBB[Rook] & b.wbBB[sd]
+	p12 := uint(pc2P12(Rook, color(sd)))
+	ep := uint(b.ep)
+	castl := uint(b.castling)
+	var mv move
+	for fr := allRBB.firstOne(); fr != 64; fr = allRBB.firstOne() {
+		rk := fr / 8
+		fl := fr % 8
+
+		// N
+		for r := rk + 1; r < 8; r++ {
+			to := uint(r*8 + fl)
+			cp := uint(b.sq[to])
+			if cp != empty && p12Color(int(cp)) == b.stm {
+				break
+			}
+			mv.packMove(uint(fr), to, p12, cp, empty, ep, castl)
+			ml.add(mv)
+			if cp != empty {
+				break
+			}
+		}
+		// S
+		for r := rk - 1; r < 8; r-- {
+			to := uint(r*8 + fl)
+			cp := uint(b.sq[to])
+			if cp != empty && p12Color(int(cp)) == b.stm {
+				break
+			}
+			mv.packMove(uint(fr), to, p12, cp, empty, ep, castl)
+			ml.add(mv)
+			if cp != empty {
+				break
+			}
+		}
+		// E
+		for f := fl + 1; f < 8; f++ {
+			to := uint(rk*8 + f)
+			cp := uint(b.sq[to])
+			if cp != empty && p12Color(int(cp)) == b.stm {
+				break
+			}
+			mv.packMove(uint(fr), to, p12, cp, empty, ep, castl)
+			ml.add(mv)
+			if cp != empty {
+				break
+			}
+		}
+		// W
+		for f := fl - 1; f < 8; f-- {
+			to := uint(rk*8 + f)
+			cp := uint(b.sq[to])
+			if cp != empty && p12Color(int(cp)) == b.stm {
+				break
+			}
+			mv.packMove(uint(fr), to, p12, cp, empty, ep, castl)
+			ml.add(mv)
+			if cp != empty {
+				break
+			}
+		}
+	}
+
 }
 
 func (b *boardStruct) genFrMoves(p12 int, frBB bitBoard, ml *moveList) {

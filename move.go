@@ -15,6 +15,12 @@ const (
 var pieceRules [nPt][]int //not pawns
 
 type move uint64
+
+func (m *move) packMove(fr, to, p12, empty, ep int, castl castling) {
+	// 6 bits (fr), 6 bita (to), 4 bits (p12), 4 bits (cp), 4 bits (pr), 6 bits (ep), 4 bits (castl), x bits value
+
+}
+
 type moveList struct {
 	mv []move
 }
