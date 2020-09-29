@@ -10,6 +10,233 @@ func init() {
 	initFen2Sq()
 }
 
+// var movesKnight [64]bitBoard
+// var movesKings [64]bitBoard
+
+// initialize all the knight moves 					--REMOVE--
+
+func initMovesKnight() {
+
+	// 	for fr := A1; fr <= H8; fr++ {
+	// 		// NNE 2,1
+	// 		rk := fr / 8
+	// 		fl := fr % 8
+	// 		if rk+2 < 8 && fl+1 < 8 {
+	// 			to := uint((rk+2)*8 + fl + 1)
+	// 			toBB.set(to)
+	// 		}
+
+	// 		// ENE 1,2
+	// 		if rk+1 < 8 && fl+2 < 8 {
+	// 			to := uint((rk+1)*8 + fl + 2)
+	// 			toBB.set(to)
+	// 		}
+
+	// 		// ESE -1,2
+	// 		if rk-1 < 8 && fl+2 < 8 {
+	// 			to := uint((rk-1)*8 + fl + 2)
+	// 			toBB.set(to)
+	// 		}
+
+	// 		// SSE -2,1
+
+	// 		if rk-2 < 8 && fl+1 < 8 {
+	// 			to := uint((rk-2)*8 + fl + 1)
+	// 			toBB.set(to)
+	// 		}
+
+	// 		// NNW 2, -1
+	// 		if rk+2 < 8 && fl-1 < 8 {
+	// 			to := uint((rk+2)*8 + fl - 1)
+	// 			toBB.set(to)
+	// 		}
+
+	// 		// WNW 1, -2
+	// 		if rk+1 < 8 && fl-2 < 8 {
+	// 			to := uint((rk+2)*8 + fl - 2)
+	// 			toBB.set(to)
+	// 		}
+
+	// 		// WSW -1, -2
+	// 		if rk-1 < 8 && fl-2 < 8 {
+	// 			to := uint((rk-1)*8 + fl - 2)
+	// 			toBB.set(to)
+	// 		}
+
+	// 		// SSW -2, -1
+	// 		// WSW -1, -2
+	// 		if rk-2 < 8 && fl-1 < 8 {
+	// 			to := uint((rk-2)*8 + fl - 1)
+	// 			toBB.set(to)
+	// 		}
+	// 		movesKnight[fr] = toBB
+	// 	}
+}
+
+// initialize all the king moves  					--REMOVE--
+
+func initMovesKings() {
+
+	// 	toBB := bitBoard(0)
+	// 	for fr := A1; fr <= H8; fr++ {
+	// 		// N 1, 0
+	// 		rk := fr / 8
+	// 		fl := fr % 8
+	// 		if rk+1 < 8 {
+	// 			to := uint((rk+1)*8 + fl)
+	// 		}
+
+	// 		// NE 1, 1
+	// 		if rk+1 < 8 && fl+1 >= 0 {
+	// 			to := uint((rk+1)*8 + fl + 1)
+	// 		}
+
+	// 		// E 0, 1
+	// 		// SE -1, 1
+	// 		if rk+1 < 8 && fl+1 >= 0 {
+	// 			to := uint((rk+1)*8 + fl + 1)
+	// 		}
+
+	// 		// S -1, 0
+	// 		// SW -1, -1
+	// 		if rk-1 < 8 && fl-1 >= 0 {
+	// 			to := uint((rk-1)*8 + fl - 1)
+	// 		}
+
+	// 		// W 0, -1
+	// 		if fl-1 >= 0 {
+	// 			to := uint((rk)*8 + fl - 1)
+	// 			toBB.set(to)
+	// 		}
+
+	// 		// NW 1, -1
+	// 		if rk+1 < 8 && fl-1 >= 0 {
+	// 			to := uint((rk+1)*8 + fl - 1)
+	// 		}
+
+	// 		movesKings[fr] = toBB
+	// 	}
+
+}
+
+var atksKnights [64]bitBoard
+var atksKings [64]bitBoard
+
+// initialize all possible knight attacks
+func initAtksKnights() {
+	for fr := A1; fr <= H8; fr++ {
+		toBB := bitBoard(0)
+		rk := fr / 8
+		fl := fr % 8
+		// NNE  2,1
+		if rk+2 < 8 && fl+1 < 8 {
+			to := (rk+2)*8 + fl + 1
+			toBB.set(to)
+		}
+
+		// ENE  1,2
+		if rk+1 < 8 && fl+2 < 8 {
+			to := (rk+1)*8 + fl + 2
+			toBB.set(to)
+		}
+
+		// ESE  -1,2
+		if rk-1 >= 0 && fl+2 < 8 {
+			to := (rk-1)*8 + fl + 2
+			toBB.set(to)
+		}
+
+		// SSE  -2,+1
+		if rk-2 >= 0 && fl+1 < 8 {
+			to := (rk-2)*8 + fl + 1
+			toBB.set(to)
+		}
+
+		// NNW  2,-1
+		if rk+2 < 8 && fl-1 >= 0 {
+			to := (rk+2)*8 + fl - 1
+			toBB.set(to)
+		}
+
+		// WNW  1,-2
+		if rk+1 < 8 && fl-2 >= 0 {
+			to := (rk+1)*8 + fl - 2
+			toBB.set(to)
+		}
+
+		// WSW  -1,-2
+		if rk-1 >= 0 && fl-2 >= 0 {
+			to := (rk-1)*8 + fl - 2
+			toBB.set(to)
+		}
+
+		// SSW  -2,-1
+		if rk-2 >= 0 && fl-1 >= 0 {
+			to := (rk-2)*8 + fl - 1
+			toBB.set(to)
+		}
+		atksKnights[fr] = toBB
+	}
+}
+
+// initialize all possible King attacks
+func initAtksKings() {
+
+	for fr := A1; fr <= H8; fr++ {
+		toBB := bitBoard(0)
+		rk := fr / 8
+		fl := fr % 8
+		//N 1,0
+		if rk+1 < 8 {
+			to := (rk+1)*8 + fl
+			toBB.set(to)
+		}
+
+		//NE 1,1
+		if rk+1 < 8 && fl+1 < 8 {
+			to := (rk+1)*8 + fl + 1
+			toBB.set(to)
+		}
+
+		//E   0,1
+		if fl+1 < 8 {
+			to := (rk)*8 + fl + 1
+			toBB.set(to)
+		}
+
+		//SE -1,1
+		if rk-1 >= 0 && fl+1 < 8 {
+			to := (rk-1)*8 + fl + 1
+			toBB.set(to)
+		}
+
+		//S  -1,0
+		if rk-1 >= 0 {
+			to := (rk-1)*8 + fl
+			toBB.set(to)
+		}
+
+		//SW -1,-1
+		if rk-1 >= 0 && fl-1 >= 0 {
+			to := (rk-1)*8 + fl - 1
+			toBB.set(to)
+		}
+
+		//W   0,-1
+		if fl-1 >= 0 {
+			to := (rk)*8 + fl - 1
+			toBB.set(to)
+		}
+
+		//NW  1,-1
+		if rk+1 < 8 && fl-1 >= 0 {
+			to := (rk+1)*8 + fl - 1
+			toBB.set(to)
+		}
+		atksKings[fr] = toBB
+	}
+}
+
 type boardStruct struct {
 	key     uint64
 	sq      [64]int
@@ -154,74 +381,87 @@ func (b *boardStruct) newGame() {
 }
 
 func (b *boardStruct) genRookMoves(ml *moveList, sd color) {
-	// TODO: generate rook ,oves with simple method - benchmark
-	// TODO: genereate took moves with simple method
-	// TODO: explain magic numbers/bitboards
-	// TODO: create tables and methods to use magic numbers
+
 	// TODO: generate rook moves with magic bitBoards
 	allRBB := b.pieceBB[Rook] & b.wbBB[sd]
 	p12 := uint(pc2P12(Rook, color(sd)))
 	ep := uint(b.ep)
-	castl := b.castling
+	castl := uint(b.castling)
 	var mv move
-	for fr := allRBB.firstOne(); fr != 64; fr = allRBB.firstOne() {
-		rk := fr / 8
-		fl := fr % 8
 
-		// N
-		for r := rk + 1; r < 8; r++ {
-			to := uint(r*8 + fl)
-			cp := uint(b.sq[to])
-			if cp != empty && p12Color(int(cp)) == sd {
-				break
-			}
-			mv.packMove(uint(fr), to, p12, cp, empty, ep, castl)
+	for fr := allRBB.firstOne(); fr != 64; fr = allRBB.firstOne() {
+		toBB := mRookTab[fr].atks(b) & (^b.wbBB[sd])
+		for to := toBB.firstOne(); to != 64; to = toBB.firstOne() {
+
+			mv.packMove(uint(fr), uint(to), p12, uint(b.sq[to]), empty, ep, castl)
 			ml.add(mv)
-			if cp != empty {
-				break
-			}
 		}
-		// S
-		for r := rk - 1; r < 8; r-- {
-			to := uint(r*8 + fl)
-			cp := uint(b.sq[to])
-			if cp != empty && p12Color(int(cp)) == sd {
-				break
-			}
-			mv.packMove(uint(fr), to, p12, cp, empty, ep, castl)
-			ml.add(mv)
-			if cp != empty {
-				break
-			}
-		}
-		// E
-		for f := fl + 1; f < 8; f++ {
-			to := uint(rk*8 + f)
-			cp := uint(b.sq[to])
-			if cp != empty && p12Color(int(cp)) == sd {
-				break
-			}
-			mv.packMove(uint(fr), to, p12, cp, empty, ep, castl)
-			ml.add(mv)
-			if cp != empty {
-				break
-			}
-		}
-		// W
-		for f := fl - 1; f < 8; f-- {
-			to := uint(rk*8 + f)
-			cp := uint(b.sq[to])
-			if cp != empty && p12Color(int(cp)) == sd {
-				break
-			}
-			mv.packMove(uint(fr), to, p12, cp, empty, ep, castl)
-			ml.add(mv)
-			if cp != empty {
-				break
-			}
-		}
+
 	}
 
+}
+
+func (b *boardStruct) genBishopMoves(ml *moveList, sd color) {
+
+	// TODO: generate rook moves with magic bitBoards
+	allRBB := b.pieceBB[Bishop] & b.wbBB[sd]
+	p12 := uint(pc2P12(Bishop, color(sd)))
+	ep := uint(b.ep)
+	castl := uint(b.castling)
+	var mv move
+
+	for fr := allBBB.firstOne(); fr != 64; fr = allBBB.firstOne() {
+		toBB := mBishopTab[fr].atks(b) & (^b.wbBB[sd])
+		for to := toBB.firstOne(); to != 64; to = toBB.firstOne() {
+
+			mv.packMove(uint(fr), uint(to), p12, uint(b.sq[to]), empty, ep, castl)
+			ml.add(mv)
+		}
+
+	}
+
+}
+
+func (b *boardStruct) genQueenMoves(ml *moveList, sd color) {
+	allRBB := b.pieceBB[Queen] & b.wbBB[sd]
+	p12 := uint(pc2P12(Queen, color(sd)))
+	ep := uint(b.ep)
+	castl := uint(b.castling)
+	var mv move
+
+	for fr := allQBB.firstOne(); fr != 64; fr = allQBB.firstOne() {
+		toBB := mBishopTab[fr].atks(b) & (^b.wbBB[sd])
+		toBB |= mRookTab[fr].atks(b) & (^b.wbBB[sd])
+		for to := toBB.firstOne(); to != 64; to = toBB.firstOne() {
+
+			mv.packMove(uint(fr), uint(to), p12, uint(b.sq[to]), empty, ep, castl)
+			ml.add(mv)
+		}
+
+	}
+}
+
+func (b *boardStruct) genKnightMoves(ml *moveList, sd color) {}
+
+func (b *boardStruct) genKingMoves(ml *moveList, sd color) {
+	// castling!
+}
+
+func (b *boardStruct) genpawnMoves(ml *moveList, sd color) {
+	// one step
+	// two steps
+	// captures
+	// ep move
+	// promotion
+}
+
+func (b *boardStruct) genAllMoves(ml *moveList, sd color) {
+	b.genpawnMoves(ml, sd)
+	b.genKingMoves(ml, sd)
+	b.genBishopMoves(ml, sd)
+	b.genRookMoves(ml, sd)
+	b.genQueenMoves(ml, sd)
+	b.genKingMoves(ml, sd)
 }
 
 func (b *boardStruct) genFrMoves(p12 int, frBB bitBoard, ml *moveList) {
@@ -772,3 +1012,73 @@ const (
 	G8
 	H8
 )
+
+////////////////////////////////////// TODO: remove this //////////////////////////////////////
+
+func (b *boardStruct) genSimplenRookMoves(ml *moveList, sd color) {
+
+	// TODO: generate rook moves with magic bitBoards
+	allRBB := b.pieceBB[Rook] & b.wbBB[sd]
+	p12 := uint(pc2P12(Rook, color(sd)))
+	ep := uint(b.ep)
+	castl := uint(b.castling)
+	var mv move
+	for fr := allRBB.firstOne(); fr != 64; fr = allRBB.firstOne() {
+		rk := fr / 8
+		fl := fr % 8
+
+		// N
+		for r := rk + 1; r < 8; r++ {
+			to := uint(r*8 + fl)
+			cp := uint(b.sq[to])
+			if cp != empty && p12Color(int(cp)) == sd {
+				break
+			}
+			mv.packMove(uint(fr), to, p12, cp, empty, ep, castl)
+			ml.add(mv)
+			if cp != empty {
+				break
+			}
+		}
+		// S
+		for r := rk - 1; r < 8; r-- {
+			to := uint(r*8 + fl)
+			cp := uint(b.sq[to])
+			if cp != empty && p12Color(int(cp)) == sd {
+				break
+			}
+			mv.packMove(uint(fr), to, p12, cp, empty, ep, castl)
+			ml.add(mv)
+			if cp != empty {
+				break
+			}
+		}
+		// E
+		for f := fl + 1; f < 8; f++ {
+			to := uint(rk*8 + f)
+			cp := uint(b.sq[to])
+			if cp != empty && p12Color(int(cp)) == sd {
+				break
+			}
+			mv.packMove(uint(fr), to, p12, cp, empty, ep, castl)
+			ml.add(mv)
+			if cp != empty {
+				break
+			}
+		}
+		// W
+		for f := fl - 1; f < 8; f-- {
+			to := uint(rk*8 + f)
+			cp := uint(b.sq[to])
+			if cp != empty && p12Color(int(cp)) == sd {
+				break
+			}
+			mv.packMove(uint(fr), to, p12, cp, empty, ep, castl)
+			ml.add(mv)
+			if cp != empty {
+				break
+			}
+		}
+	}
+
+}
