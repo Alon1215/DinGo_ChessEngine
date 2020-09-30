@@ -22,7 +22,7 @@ var pieceRules [nPt][]int //not pawns
 
 type move uint64
 
-func (m *move) packMove(fr, to, p12, cp, pr, ep int, castl castling) {
+func (m *move) packMove(fr, to, p12, cp, pr, ep int, castl castlings) {
 	// 6 bits (fr), 6 bita (to), 4 bits (p12), 4 bits (cp), 4 bits (pr), 6 bits (ep), 4 bits (castl), x bits value
 	*m = move(fr | (to << toShift) | (p12 | p12Shift) | (cp << cpShift) | (pr << prShift) | (ep << epShift) | uint(castl<<castlShift))
 }

@@ -9,3 +9,10 @@ func main() {
 }
 
 // ----------------------
+
+func init() {
+	initFen2Sq()
+	initMagic()
+	initAtksKings()
+	initAtksKnights()
+}

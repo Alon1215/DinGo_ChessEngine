@@ -6,119 +6,6 @@ import (
 	"strings"
 )
 
-func init() {
-	initFen2Sq()
-}
-
-// var movesKnight [64]bitBoard
-// var movesKings [64]bitBoard
-
-// initialize all the knight moves 					--REMOVE--
-
-func initMovesKnight() {
-
-	// 	for fr := A1; fr <= H8; fr++ {
-	// 		// NNE 2,1
-	// 		rk := fr / 8
-	// 		fl := fr % 8
-	// 		if rk+2 < 8 && fl+1 < 8 {
-	// 			to := uint((rk+2)*8 + fl + 1)
-	// 			toBB.set(to)
-	// 		}
-
-	// 		// ENE 1,2
-	// 		if rk+1 < 8 && fl+2 < 8 {
-	// 			to := uint((rk+1)*8 + fl + 2)
-	// 			toBB.set(to)
-	// 		}
-
-	// 		// ESE -1,2
-	// 		if rk-1 < 8 && fl+2 < 8 {
-	// 			to := uint((rk-1)*8 + fl + 2)
-	// 			toBB.set(to)
-	// 		}
-
-	// 		// SSE -2,1
-
-	// 		if rk-2 < 8 && fl+1 < 8 {
-	// 			to := uint((rk-2)*8 + fl + 1)
-	// 			toBB.set(to)
-	// 		}
-
-	// 		// NNW 2, -1
-	// 		if rk+2 < 8 && fl-1 < 8 {
-	// 			to := uint((rk+2)*8 + fl - 1)
-	// 			toBB.set(to)
-	// 		}
-
-	// 		// WNW 1, -2
-	// 		if rk+1 < 8 && fl-2 < 8 {
-	// 			to := uint((rk+2)*8 + fl - 2)
-	// 			toBB.set(to)
-	// 		}
-
-	// 		// WSW -1, -2
-	// 		if rk-1 < 8 && fl-2 < 8 {
-	// 			to := uint((rk-1)*8 + fl - 2)
-	// 			toBB.set(to)
-	// 		}
-
-	// 		// SSW -2, -1
-	// 		// WSW -1, -2
-	// 		if rk-2 < 8 && fl-1 < 8 {
-	// 			to := uint((rk-2)*8 + fl - 1)
-	// 			toBB.set(to)
-	// 		}
-	// 		movesKnight[fr] = toBB
-	// 	}
-}
-
-// initialize all the king moves  					--REMOVE--
-
-func initMovesKings() {
-
-	// 	toBB := bitBoard(0)
-	// 	for fr := A1; fr <= H8; fr++ {
-	// 		// N 1, 0
-	// 		rk := fr / 8
-	// 		fl := fr % 8
-	// 		if rk+1 < 8 {
-	// 			to := uint((rk+1)*8 + fl)
-	// 		}
-
-	// 		// NE 1, 1
-	// 		if rk+1 < 8 && fl+1 >= 0 {
-	// 			to := uint((rk+1)*8 + fl + 1)
-	// 		}
-
-	// 		// E 0, 1
-	// 		// SE -1, 1
-	// 		if rk+1 < 8 && fl+1 >= 0 {
-	// 			to := uint((rk+1)*8 + fl + 1)
-	// 		}
-
-	// 		// S -1, 0
-	// 		// SW -1, -1
-	// 		if rk-1 < 8 && fl-1 >= 0 {
-	// 			to := uint((rk-1)*8 + fl - 1)
-	// 		}
-
-	// 		// W 0, -1
-	// 		if fl-1 >= 0 {
-	// 			to := uint((rk)*8 + fl - 1)
-	// 			toBB.set(to)
-	// 		}
-
-	// 		// NW 1, -1
-	// 		if rk+1 < 8 && fl-1 >= 0 {
-	// 			to := uint((rk+1)*8 + fl - 1)
-	// 		}
-
-	// 		movesKings[fr] = toBB
-	// 	}
-
-}
-
 var atksKnights [64]bitBoard
 var atksKings [64]bitBoard
 
@@ -244,7 +131,7 @@ type boardStruct struct {
 	pieceBB [nPt]bitBoard
 	King    [2]int
 	ep      int
-	castling
+	castlings
 	stm    color
 	count  [12]int
 	rule50 int //set to 0 if a pawn or capt move otherwise increment
@@ -259,7 +146,6 @@ func (b *boardStruct) allBB() bitBoard {
 }
 
 // Clear the board, flags, bitboard  etc
-
 func (b *boardStruct) clear() {
 	b.stm = WHITE
 	b.rule50 = 0
@@ -268,7 +154,7 @@ func (b *boardStruct) clear() {
 		b.sq[ix] = empty
 	}
 	b.ep = 0
-	b.castling = 0
+	b.castlings = 0
 	for ix := 0; ix < nP12; ix++ {
 		b.count[ix] = 0
 	}
@@ -287,7 +173,7 @@ func (b *boardStruct) move(fr, to, pr int) bool {
 	p12 := b.sq[fr]
 	switch {
 	case p12 == wK:
-		b.castling.off(shortW | longW)
+		b.castlings.off(shortW | longW)
 		if abs(to-fr) == 2 {
 			if fr == E1 {
 				if to == G1 {
@@ -300,7 +186,7 @@ func (b *boardStruct) move(fr, to, pr int) bool {
 			}
 		}
 	case p12 == bK:
-		b.castling.off(shortB | longB)
+		b.castlings.off(shortB | longB)
 		if abs(to-fr) == 2 {
 			if fr == E1 {
 				if to == G1 {
@@ -381,12 +267,10 @@ func (b *boardStruct) newGame() {
 }
 
 func (b *boardStruct) genRookMoves(ml *moveList, sd color) {
-
-	// TODO: generate rook moves with magic bitBoards
 	allRBB := b.pieceBB[Rook] & b.wbBB[sd]
 	p12 := uint(pc2P12(Rook, color(sd)))
 	ep := uint(b.ep)
-	castl := uint(b.castling)
+	castl := uint(b.castlings)
 	var mv move
 
 	for fr := allRBB.firstOne(); fr != 64; fr = allRBB.firstOne() {
@@ -407,7 +291,7 @@ func (b *boardStruct) genBishopMoves(ml *moveList, sd color) {
 	allRBB := b.pieceBB[Bishop] & b.wbBB[sd]
 	p12 := uint(pc2P12(Bishop, color(sd)))
 	ep := uint(b.ep)
-	castl := uint(b.castling)
+	castl := uint(b.castlings)
 	var mv move
 
 	for fr := allBBB.firstOne(); fr != 64; fr = allBBB.firstOne() {
@@ -426,7 +310,7 @@ func (b *boardStruct) genQueenMoves(ml *moveList, sd color) {
 	allRBB := b.pieceBB[Queen] & b.wbBB[sd]
 	p12 := uint(pc2P12(Queen, color(sd)))
 	ep := uint(b.ep)
-	castl := uint(b.castling)
+	castl := uint(b.castlings)
 	var mv move
 
 	for fr := allQBB.firstOne(); fr != 64; fr = allQBB.firstOne() {
@@ -441,10 +325,54 @@ func (b *boardStruct) genQueenMoves(ml *moveList, sd color) {
 	}
 }
 
-func (b *boardStruct) genKnightMoves(ml *moveList, sd color) {}
+func (b *boardStruct) genKnightMoves(ml *moveList, sd color) {
+	allNBB := b.pieceBB[Knight] & b.wbBB[sd]
+	p12 := uint(pc2P12(Knight, color(sd)))
+	ep := uint(b.ep)
+	castl := uint(b.castling)
+	var mv move
+
+	for fr := allNBB.firstOne(); fr != 64; fr = allNBB.firstOne() {
+		toBB := atksKnights[fr] & (^b.wbBB[sd])
+		for to := toBB.firstOne(); to != 64; to = toBB.firstOne() {
+			mv.packMove(uint(fr), uint(to), p12, uint(b.sq[to]), empty, ep, castl)
+			ml.add(mv)
+		}
+
+	}
+}
 
 func (b *boardStruct) genKingMoves(ml *moveList, sd color) {
-	// castling!
+	// "normal" king moves
+	allKBB := b.pieceBB[King] & b.wbBB[sd]
+	p12 := uint(pc2P12(King, color(sd)))
+	ep := uint(b.ep)
+	castl := uint(b.castlings)
+	var mv move
+
+	for fr := allKBB.firstOne(); fr != 64; fr = allKBB.firstOne() {
+		toBB := atksKings[fr] & (^b.wbBB[sd])
+		for to := toBB.firstOne(); to != 64; to = toBB.firstOne() {
+			mv.packMove(uint(fr), uint(to), p12, uint(b.sq[to]), empty, ep, castl)
+			ml.add(mv)
+		}
+	}
+	if b.King[sd] == castl[sd].king {
+
+		// short castlings
+		if b.sq[castl[sd].rookSh] == castl[sd].rook {
+			// TODO: check between are not attacked & king is not in check
+			mv.packMove(uint(b.king[sd]), uint(b.king[sd]+2), uint(b.sq[b.King[sd]]), empty, empty, b.ep, b.castlings)
+			ml.add(mv)
+		}
+
+		// long castlings
+		if b.sq[castl[sd].rookSh] == castl[sd].rook {
+			// TODO: check between are not attacked & king is not in check
+			mv.packMove(uint(b.king[sd]), uint(b.king[sd]+2), uint(b.sq[b.King[sd]]), empty, empty, b.ep, b.castlings)
+			ml.add(mv)
+		}
+	}
 }
 
 func (b *boardStruct) genpawnMoves(ml *moveList, sd color) {
@@ -604,10 +532,10 @@ func parseFEN(FEN string) {
 	}
 
 	// castling
-	board.castling = 0
+	board.castlings = 0
 	if len(remaining) > 1 {
 		// TO IMPLEMENT
-		board.castling = parseCastling(remaining[1])
+		board.castlings = parseCastling(remaining[1])
 	}
 
 	// ep square
@@ -1017,11 +945,10 @@ const (
 
 func (b *boardStruct) genSimplenRookMoves(ml *moveList, sd color) {
 
-	// TODO: generate rook moves with magic bitBoards
 	allRBB := b.pieceBB[Rook] & b.wbBB[sd]
 	p12 := uint(pc2P12(Rook, color(sd)))
 	ep := uint(b.ep)
-	castl := uint(b.castling)
+	castl := uint(b.castlings)
 	var mv move
 	for fr := allRBB.firstOne(); fr != 64; fr = allRBB.firstOne() {
 		rk := fr / 8

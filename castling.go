@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-type castling uint
+type castlings uint
 
 const (
 	shortW = uint(0x1) // white can casle short
@@ -13,15 +13,43 @@ const (
 	longB  = uint(0x8) // black can castle long
 )
 
-func (c *castling) on(val uint) {
-	(*c) |= castling(val)
+type castlOptions struct {
+	short                                uint // flag
+	long                                 uint // flag
+	rook                                 int  // rook pc (wR/bR)
+	kingPos                              int  // king pos
+	rookSh                               uint // rook pos short
+	rookL                                uint // rook pos long
+	betweenSh                            bitBoard
+	betweenL                             bitBoard
+	pawnsSh, pawnsL, knightsSh, knightsL bitBoard
 }
 
-func (c *castling) off(val uint) {
-	(*c) &= castling(^val)
+var castl = [2]castlOptions{
+	{shortW, longW, wR, E1, H1, A1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
+	{shortB, longB, bR, E8, H8, A8, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 }
 
-func (c castling) String() string {
+// castling privileges
+func (c castlings) flags(sd color) bool {
+	return c.shortFlag(sd) || c.longFlag(sd)
+}
+func (c castlings) shortFlag(sd color) bool {
+	return (castl[sd].short & uint(c)) != 0
+}
+func (c castlings) longFlag(sd color) bool {
+	return (castl[sd].long & uint(c)) != 0
+}
+
+func (c *castlings) on(val uint) {
+	(*c) |= castlings(val)
+}
+
+func (c *castlings) off(val uint) {
+	(*c) &= castlings(^val)
+}
+
+func (c castlings) String() string {
 	flags := ""
 
 	if uint(c)&shortW != 0 {
@@ -43,10 +71,10 @@ func (c castling) String() string {
 }
 
 // parse castling rights in fenstring
-func parseCastling(fenCastl string) castling {
+func parseCastling(fenCastl string) castlings {
 	c := uint(0)
 	if fenCastl == "-" {
-		return castling(0)
+		return castlings(0)
 	}
 
 	if strings.Index(fenCastl, "K") >= 0 {
@@ -65,5 +93,5 @@ func parseCastling(fenCastl string) castling {
 		c |= longB
 	}
 
-	return castling(c)
+	return castlings(c)
 }

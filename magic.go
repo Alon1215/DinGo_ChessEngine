@@ -14,7 +14,7 @@ var mRookTab [64]sMagic
 
 // all atacks from current suare
 func (m *sMagic) atks(b *boardStruct) bitBoard {
-	return m.toSqBB[int(((b.allBB)&m.innerBB)*bitBoard(m.magic))>>m.shift]
+	return m.toSqBB[int(((b.allBB())&m.innerBB)*bitBoard(m.magic))>>m.shift]
 }
 
 func initMagic() {
