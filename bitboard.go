@@ -15,8 +15,8 @@ func (b bitBoard) count() int {
 	return bits.OnesCount64(uint64(b))
 }
 
-func (b *bitBoard) set(pos uint) {
-	*b |= bitBoard(uint64(1) << pos)
+func (b *bitBoard) set(pos int) {
+	*b |= bitBoard(uint64(1) << uint(pos))
 }
 
 func (b bitBoard) test(pos uint) bool {

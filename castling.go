@@ -22,7 +22,7 @@ type castlOptions struct {
 	rookL                                uint // rook pos long
 	betweenSh                            bitBoard
 	betweenL                             bitBoard
-	pawnsSh, pawnsL, knightsSh, knightsL bitBoard
+	pawnsSh, pawnsL, knightsSh, knightsL bitBoard // NOTICE, ADDED LATER
 }
 
 var castl = [2]castlOptions{
@@ -94,4 +94,95 @@ func parseCastling(fenCastl string) castlings {
 	}
 
 	return castlings(c)
+}
+
+func initCastlings() {
+	// squares between K and R short castling
+	castl[WHITE].betweenSh.set(F1)
+	castl[WHITE].betweenSh.set(G1)
+	castl[BLACK].betweenSh.set(F8)
+	castl[BLACK].betweenSh.set(G8)
+
+	// squares between K and R long castling
+	castl[WHITE].betweenL.set(B1)
+	castl[WHITE].betweenL.set(C1)
+	castl[WHITE].betweenL.set(D1)
+	castl[BLACK].betweenL.set(B8)
+	castl[BLACK].betweenL.set(C8)
+	castl[BLACK].betweenL.set(D8)
+
+	// pawns stop short castling W
+	castl[WHITE].pawnsSh.set(D2)
+	castl[WHITE].pawnsSh.set(E2)
+	castl[WHITE].pawnsSh.set(F2)
+	castl[WHITE].pawnsSh.set(G2)
+	castl[WHITE].pawnsSh.set(H2)
+	// pawns stop long castling W
+	castl[WHITE].pawnsL.set(B2)
+	castl[WHITE].pawnsL.set(C2)
+	castl[WHITE].pawnsL.set(D2)
+	castl[WHITE].pawnsL.set(E2)
+	castl[WHITE].pawnsL.set(F2)
+
+	// pawns stop short castling B
+	castl[BLACK].pawnsSh.set(D7)
+	castl[BLACK].pawnsSh.set(E7)
+	castl[BLACK].pawnsSh.set(F7)
+	castl[BLACK].pawnsSh.set(G7)
+	castl[BLACK].pawnsSh.set(H7)
+	// pawns stop long castling B
+	castl[BLACK].pawnsL.set(B7)
+	castl[BLACK].pawnsL.set(C7)
+	castl[BLACK].pawnsL.set(D7)
+	castl[BLACK].pawnsL.set(E7)
+	castl[BLACK].pawnsL.set(F7)
+
+	// knights stop short castling W
+	castl[WHITE].knightsSh.set(C2)
+	castl[WHITE].knightsSh.set(D2)
+	castl[WHITE].knightsSh.set(E2)
+	castl[WHITE].knightsSh.set(G2)
+	castl[WHITE].knightsSh.set(H2)
+	castl[WHITE].knightsSh.set(D3)
+	castl[WHITE].knightsSh.set(E3)
+	castl[WHITE].knightsSh.set(F3)
+	castl[WHITE].knightsSh.set(G3)
+	castl[WHITE].knightsSh.set(H3)
+	// knights stop long castling W
+	castl[WHITE].knightsL.set(A2)
+	castl[WHITE].knightsL.set(B2)
+	castl[WHITE].knightsL.set(C2)
+	castl[WHITE].knightsL.set(E2)
+	castl[WHITE].knightsL.set(F2)
+	castl[WHITE].knightsL.set(G2)
+	castl[WHITE].knightsL.set(B3)
+	castl[WHITE].knightsL.set(C3)
+	castl[WHITE].knightsL.set(D3)
+	castl[WHITE].knightsL.set(E3)
+	castl[WHITE].knightsL.set(F3)
+
+	// knights stop short castling B
+	castl[BLACK].knightsSh.set(C7)
+	castl[BLACK].knightsSh.set(D7)
+	castl[BLACK].knightsSh.set(E7)
+	castl[BLACK].knightsSh.set(G7)
+	castl[BLACK].knightsSh.set(H7)
+	castl[BLACK].knightsSh.set(D6)
+	castl[BLACK].knightsSh.set(E6)
+	castl[BLACK].knightsSh.set(F6)
+	castl[BLACK].knightsSh.set(G6)
+	castl[BLACK].knightsSh.set(H6)
+	// knights stop long castling B
+	castl[BLACK].knightsL.set(A7)
+	castl[BLACK].knightsL.set(B7)
+	castl[BLACK].knightsL.set(C7)
+	castl[BLACK].knightsL.set(E7)
+	castl[BLACK].knightsL.set(F7)
+	castl[BLACK].knightsL.set(G7)
+	castl[BLACK].knightsL.set(B6)
+	castl[BLACK].knightsL.set(C6)
+	castl[BLACK].knightsL.set(D6)
+	castl[BLACK].knightsL.set(E6)
+	castl[BLACK].knightsL.set(F6)
+
 }
