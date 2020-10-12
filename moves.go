@@ -61,6 +61,7 @@ func (m *move) packMove(fr, to, pc, cp, pr, epSq int, castl castlings) {
 	*m = move(fr | (to << toShift) | (pc << pcShift) |
 		(cp << cpShift) | (pr << prShift) | (epFile << epShift) | int(castl<<castlShift))
 }
+
 func (m *move) packEval(score int) {
 	(*m) &= move(^evalMask) //clear eval
 	(*m) |= move(score+30000) << evalShift

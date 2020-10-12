@@ -43,3 +43,11 @@ func engine() (frEng, toEng chan string) {
 	}()
 	return
 }
+
+func search() int {
+	return evaluate()
+}
+
+func evaluate() int {
+	return 0
+}

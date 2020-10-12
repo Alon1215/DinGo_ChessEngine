@@ -12,40 +12,43 @@ type sMagic struct {
 var mBishopTab [64]sMagic
 var mRookTab [64]sMagic
 
-// all atacks from current suare
-func (m *sMagic) atks(b *boardStruct) bitBoard {
-	return m.toSqBB[int(((b.allBB())&m.innerBB)*bitBoard(m.magic))>>m.shift]
+// all attacks from current square
+func (m *sMagic) atks(allBB bitBoard) bitBoard {
+	return m.toSqBB[int(((allBB&m.innerBB)*bitBoard(m.magic))>>m.shift)]
 }
 
 func initMagic() {
-	fmt.Println("sarting init() for magic.go")
+	fmt.Println("starting init() for magic.go")
 
-	fillOptimalMagicsB()
+	// bishops
+	//fillOptimalMagicsB()
 	for sq := A1; sq <= H8; sq++ {
 		mBishopTab[sq].shift = uint(64 - nBBits[sq])
 		mBishopTab[sq].innerBB = bitBoard(innerBAtks(sq))
 
-		mBishopTab.magic = magicB[sq]
+		mBishopTab[sq].magic = magicB[sq]
 	}
 
 	// rooks
-	fillOptimalMagicsR
+	fillOptimalMagicsR()
 	for sq := A1; sq <= H8; sq++ {
 		mRookTab[sq].shift = uint(64 - nRBits[sq])
-		mRookTab[sq].innerBB = bitBoard(innerBAtks(sq))
+		mRookTab[sq].innerBB = bitBoard(innerRAtks(sq))
 		mRookTab[sq].magic = magicR[sq]
 	}
 
-	fmt.Println("BISHOPS")
-	prepareMagicB()
+	prepareMagicB() // Bishops
+	prepareMagicR() // Rooks
 }
+
+//var toSqBB *[]bitBoard // pointer to mRookTab[sq].toSqBB or mBishopTab[sq].toSqBB
 
 type dirstr struct {
 	rDir int
 	fDir int
 }
 
-// Create move bitBoards for bishops on all suqares
+// create move bitBoards for bishops on all squares
 func prepareMagicB() {
 	dirsB := []dirstr{{+1, +1}, {-1, +1}, {+1, -1}, {-1, -1}}
 	for fr := A1; fr <= H8; fr++ {
@@ -115,7 +118,178 @@ func bitCombs(wBits bitBoard, fr, currSq, currIx int, maxM *int, mTabEntry *sMag
 	return cnt
 }
 
-// ----- PREPARE -----
+func getNextSq(fr, currSq int, currIx *int, dirs []dirstr) int {
+	for ; *currIx < 4; *currIx++ {
+		rk := currSq / 8
+		fl := currSq % 8
+		r := dirs[*currIx].rDir
+		f := dirs[*currIx].fDir
+		rk += r
+		fl += f
+		if (r == 0 || (rk > 0 && rk < 7)) && (f == 0 || (fl > 0 && fl < 7)) {
+			return rk*8 + fl
+		}
+		currSq = fr
+	}
+
+	return -1
+}
+
+func computeAtks(fr int, dirs []dirstr, toBB uint64) uint64 {
+	movesBB := uint64(0)
+
+	// 0
+	r := dirs[0].rDir
+	f := dirs[0].fDir
+	rk := fr/8 + r
+	fl := fr%8 + f
+	for rk >= 0 && fl >= 0 && rk < 8 && fl < 8 {
+		sq := uint(rk*8 + fl)
+		sqBit := uint64(1) << sq
+
+		movesBB |= sqBit
+		if sqBit&toBB != 0 {
+			break
+		}
+		rk += r
+		fl += f
+	}
+
+	// 1
+	r = dirs[1].rDir
+	f = dirs[1].fDir
+	rk = fr/8 + r
+	fl = fr%8 + f
+	for rk >= 0 && fl >= 0 && rk < 8 && fl < 8 {
+		sq := uint(rk*8 + fl)
+		sqBit := uint64(1) << sq
+
+		movesBB |= sqBit
+		if sqBit&toBB != 0 {
+			break
+		}
+		rk += r
+		fl += f
+	}
+
+	// 2
+	r = dirs[2].rDir
+	f = dirs[2].fDir
+	rk = fr/8 + r
+	fl = fr%8 + f
+	for rk >= 0 && fl >= 0 && rk < 8 && fl < 8 {
+		sq := uint(rk*8 + fl)
+		sqBit := uint64(1) << sq
+
+		movesBB |= sqBit
+		if sqBit&toBB != 0 {
+			break
+		}
+		rk += r
+		fl += f
+	}
+
+	// 3
+	r = dirs[3].rDir
+	f = dirs[3].fDir
+	rk = fr/8 + r
+	fl = fr%8 + f
+	for rk >= 0 && fl >= 0 && rk < 8 && fl < 8 {
+		sq := uint(rk*8 + fl)
+		sqBit := uint64(1) << sq
+
+		movesBB |= sqBit
+		if sqBit&toBB != 0 {
+			break
+		}
+		rk += r
+		fl += f
+	}
+
+	return movesBB
+}
+
+// all bishop inner attacks from sq on an empty board
+func innerBAtks(sq int) uint64 {
+	atkBB := uint64(0)
+	// NE (+9)
+	rw := sq / 8
+	fl := sq % 8
+	r := rw + 1
+	f := fl + 1
+	for r < 7 && f < 7 {
+		atkBB |= uint64(1) << uint(r*8+f)
+		r++
+		f++
+	}
+
+	// NW (+7)
+	r = rw + 1
+	f = fl - 1
+	for r < 7 && f > 0 {
+		atkBB |= uint64(1) << uint(r*8+f)
+		r++
+		f--
+	}
+	// SW (-7)
+	r = rw - 1
+	f = fl - 1
+	for r > 0 && f > 0 {
+		atkBB |= uint64(1) << uint(r*8+f)
+		r--
+		f--
+	}
+
+	// SE (-9)
+	r = rw - 1
+	f = fl + 1
+	for r > 0 && f < 7 {
+		atkBB |= uint64(1) << uint(r*8+f)
+		r--
+		f++
+	}
+	return atkBB
+}
+
+// all rook attacks from sq on an empty board
+func innerRAtks(sq int) uint64 {
+	atkBB := uint64(0)
+	// N (+8)
+	rw := sq / 8
+	fl := sq % 8
+	r := rw + 1
+	f := fl
+	for r < 7 {
+		atkBB |= uint64(1) << uint(r*8+f)
+		r++
+	}
+
+	// E (+1)
+	r = rw
+	f = fl + 1
+	for f < 7 {
+		atkBB |= uint64(1) << uint(r*8+f)
+		f++
+	}
+	// S (-8)
+	r = rw - 1
+	f = fl
+	for r > 0 {
+		atkBB |= uint64(1) << uint(r*8+f)
+		r--
+	}
+
+	// W (-1)
+	r = rw
+	f = fl - 1
+	for f > 0 {
+		atkBB |= uint64(1) << uint(r*8+f)
+		f--
+	}
+
+	return atkBB
+
+}
 
 func fillOptimalMagicsB() {
 	nBBits[A1] = 5
@@ -375,3 +549,24 @@ var magicR = [64]uint64{
 	0x10310090a00b824,
 	0x800040100944822,
 }
+
+/*
+func findDuplicates(toBBTab []bitBoard, fr int, magic uint64) int {
+	cntDup := 0
+	if len(toBBTab) < 2 {
+		return 0
+	}
+	for ix, toBB := range toBBTab[:len(toBBTab)-1] {
+		dup := false
+		for _, toBB2 := range toBBTab[ix+1:] {
+			if toBB == toBB2 && toBB != 0x0 {
+				dup = true
+			}
+		}
+		if dup {
+			cntDup++
+		}
+	}
+	return cntDup
+}
+*/
