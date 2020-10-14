@@ -104,7 +104,7 @@ func root(toEngine chan bool, frEngine chan string) {
 	childPV.new()
 	b := &board
 	ml := make(moveList, 0, 60)
-	for _ = range toEngine {
+	for range toEngine {
 		limits.startTime, limits.nextTime = time.Now(), time.Now()
 		alpha, beta := -minEval, maxEval
 		bm, bs := noMove, noScore
