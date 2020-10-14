@@ -3,13 +3,19 @@ package main
 import (
 	"fmt"
 	"math"
+	"time"
 )
 
 type searchLimits struct {
-	depth    int
-	nodes    uint64
-	moveTime int // in milliseconds
-	infinite bool
+	depth     int
+	nodes     uint64
+	moveTime  int // in milliseconds
+	infinite  bool
+	startTime time.Time
+	lastTime  time.Time
+
+	//////////////// current //////////
+	stop bool
 }
 
 var limits searchLimits
@@ -19,6 +25,7 @@ func (s *searchLimits) init() {
 	s.nodes = math.MaxUint64
 	s.moveTime = 99999999999
 	s.infinite = false
+	s.stop = false
 }
 
 func (s *searchLimits) setStop(st bool) {
@@ -78,7 +85,7 @@ func root(toEngine chan bool, frEngine chan string) {
 
 }
 
-func search() int {
+func search(b *boardStruct) int {
 	//return evaluate()
 	return -1
 }
