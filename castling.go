@@ -1,28 +1,29 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 )
 
 type castlings uint
 
 const (
-	shortW = uint(0x1) // white can casle short
+	shortW = uint(0x1) // white can castle short
 	longW  = uint(0x2) // white can castle long
-	shortB = uint(0x4) // black can casle short
-	longB  = uint(0x8) // black can castle long
+	shortB = uint(0x4) // black can castle short
+	longB  = uint(0x8) // black can castle short
 )
 
 type castlOptions struct {
 	short                                uint // flag
 	long                                 uint // flag
-	rook                                 int  // rook pc (wR/bR)
+	rook                                 int  // rook p12 (wR/bR)
 	kingPos                              int  // king pos
 	rookSh                               uint // rook pos short
 	rookL                                uint // rook pos long
 	betweenSh                            bitBoard
 	betweenL                             bitBoard
-	pawnsSh, pawnsL, knightsSh, knightsL bitBoard // NOTICE, ADDED LATER
+	pawnsSh, pawnsL, knightsSh, knightsL bitBoard
 }
 
 var castl = [2]castlOptions{
@@ -51,11 +52,10 @@ func (c *castlings) off(val uint) {
 
 func (c castlings) String() string {
 	flags := ""
-
 	if uint(c)&shortW != 0 {
-		flags += "K"
+		flags = "K"
 	}
-	if uint(c)&longB != 0 {
+	if uint(c)&longW != 0 {
 		flags += "Q"
 	}
 	if uint(c)&shortB != 0 {
@@ -71,7 +71,7 @@ func (c castlings) String() string {
 }
 
 // parse castling rights in fenstring
-func parseCastling(fenCastl string) castlings {
+func parseCastlings(fenCastl string) castlings {
 	c := uint(0)
 	if fenCastl == "-" {
 		return castlings(0)
@@ -80,15 +80,12 @@ func parseCastling(fenCastl string) castlings {
 	if strings.Index(fenCastl, "K") >= 0 {
 		c |= shortW
 	}
-
 	if strings.Index(fenCastl, "Q") >= 0 {
 		c |= longW
 	}
-
 	if strings.Index(fenCastl, "k") >= 0 {
 		c |= shortB
 	}
-
 	if strings.Index(fenCastl, "q") >= 0 {
 		c |= longB
 	}
@@ -97,6 +94,7 @@ func parseCastling(fenCastl string) castlings {
 }
 
 func initCastlings() {
+	fmt.Println("init castlings")
 	// squares between K and R short castling
 	castl[WHITE].betweenSh.set(F1)
 	castl[WHITE].betweenSh.set(G1)

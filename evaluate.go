@@ -35,26 +35,27 @@ var pSqTab [12][64]int
 func evaluate(b *boardStruct) int {
 	ev := 0
 	for sq := A1; sq <= H8; sq++ {
-		pc := b.sq[sq]
-		if pc == empty {
+		p12 := b.sq[sq]
+		if p12 == empty {
 			continue
 		}
-		ev += pieceVal[pc]
-		ev += pcSqScore(pc, sq)
+		ev += pieceVal[p12]
+		ev += pSqScore(p12, sq)
 	}
 	return ev
 }
 
 // Score returns the piece square table value for a given piece on a given square. Stage = MG/EG
-func pcSqScore(pc, sq int) int {
-	return pSqTab[pc][sq]
+func pSqScore(p12, sq int) int {
+	return pSqTab[p12][sq]
 }
 
 // PstInit intits the pieces-square-tables when the program starts
-func pcSqInit() {
-	for pc := 0; pc < 12; pc++ {
+func pSqInit() {
+	tell("info string pStInit startar")
+	for p12 := 0; p12 < 12; p12++ {
 		for sq := 0; sq < 64; sq++ {
-			pSqTab[pc][sq] = 0
+			pSqTab[p12][sq] = 0
 		}
 	}
 
@@ -87,14 +88,14 @@ func pcSqInit() {
 	}
 
 	// for Black
-	for pt := Pawn; pt <= King; pt++ {
+	for pc := Pawn; pc <= King; pc++ {
 
-		wPiece := pt2pc(pt, WHITE)
-		bPiece := pt2pc(pt, BLACK)
+		wP12 := pc2P12(pc, WHITE)
+		bP12 := pc2P12(pc, BLACK)
 
 		for bSq := 0; bSq < 64; bSq++ {
 			wSq := oppRank(bSq)
-			pSqTab[bPiece][bSq] = -pSqTab[wPiece][wSq]
+			pSqTab[bP12][bSq] = -pSqTab[wP12][wSq]
 		}
 	}
 }

@@ -37,8 +37,11 @@ func initMagic() {
 		mRookTab[sq].magic = magicR[sq]
 	}
 
-	prepareMagicB() // Bishops
-	prepareMagicR() // Rooks
+	fmt.Println("BISHOPS")
+	prepareMagicB()
+
+	fmt.Println("ROOKS")
+	prepareMagicR()
 }
 
 //var toSqBB *[]bitBoard // pointer to mRookTab[sq].toSqBB or mBishopTab[sq].toSqBB

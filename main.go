@@ -5,14 +5,17 @@ func main() {
 
 	uci(input())
 
-	tell("info string quits program")
+	tell("info string quits DinGo")
 }
 
 // ----------------------
 
 func init() {
-	initFen2Sq()
+	initFenSq2Int()
 	initMagic()
 	initAtksKings()
 	initAtksKnights()
+	initCastlings()
+	pSqInit()
+	board.newGame()
 }

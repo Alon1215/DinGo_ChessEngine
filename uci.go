@@ -9,27 +9,25 @@ import (
 	"strings"
 )
 
-var tell = mainTell // set default tell
+var tell = mainTell
 var trim = strings.TrimSpace
 var low = strings.ToLower
 
 var saveBm = ""
 
 func uci(input chan string) {
-	tell("info string Hello from uci")
+	fmt.Println("info string Hello from uci")
 
-	frEng, toEng := engine()
-	bInfinite := false
+	toEng, frEng := engine()
 	var cmd string
 	var bm string
 	quit := false
 	for !quit {
 		select {
 		case cmd = <-input:
-			//words = strings.Split(cmd, " ")
-			// tell("info string uci got ", cmd, " command") //check if it is the write line
+			//			tell("info string uci got ", cmd, "\n")
 		case bm = <-frEng:
-			handleBm(bm, bInfinite)
+			handleBm(bm)
 			continue
 		}
 		words := strings.Split(cmd, " ")
@@ -49,34 +47,56 @@ func uci(input chan string) {
 		case "debug":
 			handleDebug(words)
 		case "register":
-			handleIsRegister(words)
+			handleRegister(words)
 		case "go":
-			handleGo(words)
+			handleGo(toEng, words)
 		case "ponderhit":
 			handlePonderhit()
 		case "stop":
-			handleStop(toEng, &bInfinite)
+			handleStop()
 		case "quit", "q":
-			handleQuit(toEng)
+			handleQuit()
 			quit = true
 			continue
 		case "pb":
-			board.init()
+			board.Print()
 		case "pbb":
 			board.printAllBB()
+		case "pm":
+			board.printAllLegals()
+		case "pe":
+			fmt.Println("eval =", evaluate(&board))
+		case "psee":
+			fr, to := empty, empty
+			if len(words[1]) == 2 && len(words[2]) == 2 {
+				fr = fenSq2Int[words[1]]
+				to = fenSq2Int[words[2]]
+			} else if len(words[1]) == 4 {
+				fr = fenSq2Int[words[1][0:2]]
+				to = fenSq2Int[words[2][2:]]
+			} else {
+				fmt.Println("error in fr/to")
+				continue
+			}
+
+			//fmt.Println("see = ", see(fr, to, &board))
+			fmt.Println("see = ", fr, to)
+		case "pqs":
+			fmt.Println("qs =", maxEval)
+
 		default:
 			tell("info string unknown cmd ", cmd)
 		}
-
 	}
+
 	tell("info string leaving uci()")
 }
 
 func handleUci() {
-	tell("id name DinGo")
-	tell("id author Alon1215")
+	tell("id name GoBit")
+	tell("id author Carokanns")
 
-	tell("option name Hash type spin default 32 min 1 max 1024")
+	tell("option name Hash type spin default 128 min 16 max 1024")
 	tell("option name Threads type spin default 1 min 1 max 16")
 	tell("uciok")
 }
@@ -85,58 +105,23 @@ func handleIsReady() {
 	tell("readyok")
 }
 
-func handleStop(toEng chan string, bInfinite bool) {
-	if *bInfinite {
-		if saveBm != "" {
-			tell(saveBm)
-			saveBm = ""
-		}
-
-		toEng <- "stop"
-		*bInfinite = true
-	}
-	tell("info string stop not implemented")
-}
-
-// handleQuit not really necessary
-func handleQuit(toEng chan string) {
-	toEng <- "stop"
-}
-
-func handleBm(bm string, bInfinite bool) {
-	if bInfinite {
-		saveBm = bm
-		return
-	}
-	tell(bm)
-}
-
-// Not impleneted uci commands:
-
-func handleSetOption(words []string) {
-	tell("info string not implemented")
-}
-
-func handleNewgame(option []string) {
-	// tell("info string ucinewgame not implemented")
+func handleNewgame() {
 	board.newGame()
 }
 
 func handlePosition(cmd string) {
-	// position [fen <fenstring> | startpos] moves <move1> ... <movei>
-
+	// position [fen <fenstring> | startpos ]  moves <move1> .... <movei>
+	board.newGame()
 	cmd = trim(strings.TrimPrefix(cmd, "position"))
 	parts := strings.Split(cmd, "moves")
 	if len(cmd) == 0 || len(parts) > 2 {
-		err := fmt.Errorf("%v wrong length=%v", parts, len(parts)) // CHECK IF RIGHT
+		err := fmt.Errorf("%v wrong length=%v", parts, len(parts))
 		tell("info string Error", fmt.Sprint(err))
 		return
 	}
 
 	alt := strings.Split(parts[0], " ")
 	alt[0] = trim(alt[0])
-	//tell("info string position ", alt[0], " not implemented")
-
 	if alt[0] == "startpos" {
 		parts[0] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 	} else if alt[0] == "fen" {
@@ -146,7 +131,6 @@ func handlePosition(cmd string) {
 		tell("info string Error", err.Error())
 		return
 	}
-	parts[0] = strings.Join(alt, " ")
 	// Now parts[0] is the fen-string only
 
 	// start the parsing
@@ -155,15 +139,46 @@ func handlePosition(cmd string) {
 
 	if len(parts) == 2 {
 		parts[1] = low(trim(parts[1]))
-		fmt.Printf("info string parse %#v\n", parts[1])
+		//fmt.Printf("info string parse %#v\n", parts[1])
 		parseMvs(parts[1])
 	}
 }
 
-// go searchmoves <mov1-moveii</ponder/wtime <ms>/ btime <ms>/ bi -----MISS THE REST----
-//		movestogo <x>/depth <x>/nodes <x>/movetime <ms>/mate <x>/infinite
-func handleGo(words []string) {
-	// TODO: Right now can only handle one of them at a time. We need to be able to mix them
+func handleStop() {
+	if limits.infinite {
+		if saveBm != "" {
+			tell(saveBm)
+			saveBm = ""
+		}
+
+		limits.setStop(true)
+		limits.setInfinite(false)
+	}
+}
+
+// handleQuit not really necessary
+func handleQuit() {
+
+}
+
+func handleBm(bm string) {
+	if limits.infinite {
+		saveBm = bm
+		return
+	}
+	tell(bm)
+}
+
+// not implemented uci commands
+func handleSetOption(words []string) {
+	// setoption name Hash value 256
+	tell("info string setoption not implemented")
+}
+
+// go  searchmoves <move1-moveii>/ponder/wtime <ms>/ btime <ms>/winc <ms>/binc <ms>/movestogo <x>/
+//     depth <x>/nodes <x>/movetime <ms>/mate <x>/infinite
+func handleGo(toEng chan bool, words []string) {
+	// TODO: Right ne can only handle one of them at a time. We need to be able to mix them
 	limits.init()
 	if len(words) > 1 {
 		words[1] = trim(low(words[1]))
@@ -183,13 +198,9 @@ func handleGo(words []string) {
 		case "movestogo":
 			tell("info string go movestogo not implemented")
 		case "depth":
-			d := -1
-			err := error(nil)
-			if len(words) >= 3 {
-				d, err = strconv.Atoi(words[2])
-			}
-			if d < 0 || err != nil {
-				tell("info string depth not numeric")
+			d, err := strconv.Atoi(words[2])
+			if err != nil {
+				tell("info string ", words[2], " not numeric")
 				return
 			}
 			limits.setDepth(d)
@@ -215,10 +226,7 @@ func handleGo(words []string) {
 			tell("info string go ", words[1], " not implemented")
 		}
 	} else {
-		// tell("info string go not implemented")
-		tell("info string suppose go infinite")
-		limits.setInfinite(true)
-		toEng <- true
+		tell("info string go not implemented")
 	}
 }
 
@@ -226,16 +234,17 @@ func handlePonderhit() {
 	tell("info string ponderhit not implemented")
 }
 
-func handleDebug(option []string) {
+func handleDebug(words []string) {
+	// debug [ on | off ]
 	tell("info string debug not implemented")
 }
 
-func handleRegister(option []string) {
+func handleRegister(words []string) {
+	// register later/name <x>/code <y>
 	tell("info string register not implemented")
 }
 
 //------------------------------------------------------
-
 func mainTell(text ...string) {
 	toGUI := ""
 	for _, t := range text {
@@ -246,9 +255,9 @@ func mainTell(text ...string) {
 
 func input() chan string {
 	line := make(chan string)
+	var reader *bufio.Reader
+	reader = bufio.NewReader(os.Stdin)
 	go func() {
-		var reader *bufio.Reader
-		reader = bufio.NewReader(os.Stdin)
 		for {
 			text, err := reader.ReadString('\n')
 			text = strings.TrimSpace(text)
