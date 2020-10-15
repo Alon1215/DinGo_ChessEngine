@@ -94,7 +94,7 @@ func uci(input chan string) {
 
 func handleUci() {
 	tell("id name GoBit")
-	tell("id author Carokanns")
+	tell("id author Alon Michaeli")
 
 	tell("option name Hash type spin default 128 min 16 max 1024")
 	tell("option name Threads type spin default 1 min 1 max 16")

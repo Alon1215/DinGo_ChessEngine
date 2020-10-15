@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	maxDepth = 100
+	maxDepth = 8
 	maxPly   = 100
 )
 
