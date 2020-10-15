@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math"
+	"strconv"
 	"time"
 )
 
@@ -100,42 +101,56 @@ func engine() (toEngine chan bool, frEngine chan string) {
 
 //TODO root: Aspiration search
 func root(toEngine chan bool, frEngine chan string) {
+	var depth int
 	var pv pvList
 	var childPV pvList
 	childPV.new()
+	pv.new()
 	b := &board
 	ml := make(moveList, 0, 60)
-	for range toEngine {
-		limits.startTime, limits.nextTime = time.Now(), time.Now() // Need 2 time stamps
-		alpha, beta := -minEval, maxEval
-		bm, bs := noMove, noScore
-		depth := limits.depth
+	for _ = range toEngine {
+		limits.startTime, limits.nextTime = time.Now(), time.Now()
+		alpha, beta := minEval, maxEval
+
 		cntNodes = 0
+		killers.clear()
 		ml.clear()
+		pv.clear()
 		genAndSort(b, &ml)
+		bm := ml[0]
+		bs := noScore
+		depth = limits.depth
+		for depth = 1; depth <= limits.depth; depth++ {
+			bs = noScore
+			for ix := range ml {
+				mv := &ml[ix]
+				childPV.clear()
 
-		for ix := range ml {
-			mv := &ml[ix]
-			childPV.clear()
+				b.move(*mv)
+				tell("info depth ", strconv.Itoa(depth), " currmove ", mv.String(), " currmovenumber ", strconv.Itoa(ix+1))
+				score := -search(-beta, -alpha, depth-1, 1, &childPV, b)
+				b.unmove(*mv)
+				if limits.stop {
+					break
+				}
+				mv.packEval(score)
+				if score > bs {
+					bs = score
+					pv.catenate(*mv, &childPV)
 
-			b.move(*mv)
-			tell("info currmove ", mv.String())
-			score := -search(-beta, -alpha, depth-1, 1, &childPV, b)
-			b.unmove(*mv)
-			mv.packEval(signEval(b.stm, score))
-			if score > bs {
-				bs = score
-				pv.clear()
-				pv.catenate(*mv, &childPV)
+					bm = *mv
+					alpha = score
 
-				bm = *mv
-				alpha = score
-				tell(fmt.Sprintf("info score cp %v depth %v nodes %v pv ", bs, depth, cntNodes), pv.String())
+					t1 := time.Since(limits.startTime)
+					tell(fmt.Sprintf("info score cp %v depth %v nodes %v time %v pv ", bm.eval(), depth, cntNodes, int(t1.Seconds()*1000)), pv.String())
+				}
 			}
+			ml.sort()
 		}
-		ml.sort()
-		tell(fmt.Sprintf("info score cp %v depth %v nodes %v pv ", bm.eval(), depth, cntNodes), pv.String())
-		frEngine <- fmt.Sprintf("bestmove %v%v", sq2Fen[ml[0].fr()], sq2Fen[ml[0].to()])
+
+		t1 := time.Since(limits.startTime)
+		tell(fmt.Sprintf("info score cp %v depth %v nodes %v time %v pv ", bm.eval(), depth-1, cntNodes, int(t1.Seconds()*1000)), pv.String())
+		frEngine <- fmt.Sprintf("bestmove %v%v", sq2Fen[bm.fr()], sq2Fen[bm.to()])
 	}
 }
 
@@ -164,8 +179,6 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 	bm, bs := noMove, noScore // best move, best score
 	childPV := make(pvList, 0, maxPly)
 	for _, mv := range ml {
-		x := b.sq[A1]
-		y := b.sq[B2]
 		if !b.move(mv) {
 			continue
 		}
@@ -206,6 +219,149 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 	return bs
 }
 
+func initQS(ml *moveList, b *boardStruct) {
+	ml.clear()
+	b.genAllCaptures(ml)
+}
+func qs(beta int, b *boardStruct) int {
+	ev := signEval(b.stm, evaluate(b))
+	if ev >= beta {
+		// we are good. No need to try captures
+		return ev
+	}
+	bs := ev
+
+	qsList := make(moveList, 0, 60)
+	initQS(&qsList, b) // create attacks
+	done := bitBoard(0)
+
+	// move loop
+	for _, mv := range qsList {
+		fr := mv.fr()
+		to := mv.to()
+
+		// This works because we pick lower value pieces first
+		if done.test(to) { // Don't do the same to-sw again
+			continue
+		}
+		done.set(to)
+
+		see := see(fr, to, b)
+
+		if see == 0 && mv.cp() == empty {
+			// must be a promotion that didn't captureand was not captured
+			see = pieceVal[wQ] - pieceVal[wP]
+		}
+
+		if see <= 0 {
+			continue // equal captures not interesting
+		}
+
+		sc := ev + see
+		if sc > bs {
+			bs = sc
+			if sc >= beta {
+				return sc
+			}
+		}
+	}
+
+	return bs
+}
+
+// see (Static Echange Evaluation)
+// Start with the capture fr-to and find out all the other captures to to-sq
+func see(fr, to int, b *boardStruct) int {
+	pc := b.sq[fr]
+	cp := b.sq[to]
+	cnt := 1
+	us := pcColor(pc)
+	them := us.opp()
+
+	// All the attackers to the to-sq, but first remove the moving pc2pt and use X-ray to the to-sq
+	occ := b.allBB()
+	occ.clr(fr)
+	attackingBB :=
+		mRookTab[to].atks(occ)&(b.pieceBB[Rook]|b.pieceBB[Queen]) |
+			mBishopTab[to].atks(occ)&(b.pieceBB[Bishop]|b.pieceBB[Queen]) |
+			(atksKnights[to] & b.pieceBB[Knight]) |
+			(atksKings[to] & b.pieceBB[King]) |
+			(b.wPawnAtksFr(to) & b.pieceBB[Pawn] & b.wbBB[BLACK]) |
+			(b.bPawnAtksFr(to) & b.pieceBB[Pawn] & b.wbBB[WHITE])
+	attackingBB &= occ
+
+	if (attackingBB & b.wbBB[them]) == 0 { // 'they' have no attackers - good bye
+		return abs(pieceVal[cp]) // always return score from 'our' point of view
+	}
+
+	// Now we continue to keep track of the material gain/loss for each capture
+	// Always remove the last attacker and use x-ray to find possible new attackers
+
+	lastAtkVal := abs(pieceVal[pc]) // save attacker pc2pt value for later use
+	var captureList [32]int
+	captureList[0] = abs(pieceVal[cp])
+	n := 1
+
+	stm := them // change side to move
+
+	for {
+		cnt++
+
+		var pt int
+		switch { // select the least valuable attacker
+		case (attackingBB & b.pieceBB[Pawn] & b.wbBB[stm]) != 0:
+			pt = Pawn
+		case (attackingBB & b.pieceBB[Knight] & b.wbBB[stm]) != 0:
+			pt = Knight
+		case (attackingBB & b.pieceBB[Bishop] & b.wbBB[stm]) != 0:
+			pt = Bishop
+		case (attackingBB & b.pieceBB[Rook] & b.wbBB[stm]) != 0:
+			pt = Rook
+		case (attackingBB & b.pieceBB[Queen] & b.wbBB[stm]) != 0:
+			pt = Queen
+		case (attackingBB & b.pieceBB[King] & b.wbBB[stm]) != 0:
+			pt = King
+		default:
+			panic("Don't come here in see! ")
+		}
+
+		// now remove the pt above from the attackingBB and scan for new attackers by possible x-ray
+		BB := attackingBB & (attackingBB & b.pieceBB[pt] & b.wbBB[stm])
+		occ ^= (BB & -BB) // turn off the rightmost bit from BB in occ
+
+		//  pick sliding attacks again (do it from to-sq)
+		attackingBB |= mRookTab[to].atks(occ)&(b.pieceBB[Rook]|b.pieceBB[Queen]) |
+			mBishopTab[to].atks(occ)&(b.pieceBB[Bishop]|b.pieceBB[Queen])
+		attackingBB &= occ // but only attacking pieces
+
+		captureList[n] = -captureList[n-1] + lastAtkVal
+		n++
+
+		// save the value of tha capturing pc2pt to be used later
+		lastAtkVal = pieceVal[pt2pc(pt, WHITE)] // using WHITE always gives positive integer
+		stm = stm.opp()                         // next side to move
+
+		if pt == King && (attackingBB&b.wbBB[stm]) != 0 { //NOTE: just changed stm-color above
+			// if king capture and 'they' are atting we have to stop
+			captureList[n] = pieceVal[wK]
+			n++
+			break
+		}
+
+		if attackingBB&b.wbBB[stm] == 0 { // if no more attackers
+			break
+		}
+
+	}
+
+	// find the optimal capture sequence and 'our' material value will be on top
+	for n--; n != 0; n-- {
+		captureList[n-1] = min(-captureList[n], captureList[n-1])
+	}
+
+	return captureList[0]
+}
+
 func genAndSort(b *boardStruct, ml *moveList) {
 
 	b.genAllMoves(ml)
@@ -226,7 +382,7 @@ func genInOrder(b *boardStruct, ml *moveList, ply int) {
 	ml.clear()
 	b.genAllCaptures(ml)
 	noCaptIx := len(*ml)
-	b.genAllNonCaptures(*ml)
+	b.genAllNonCaptures(ml)
 	if len(*ml)-noCaptIx > 2 {
 		//place killers first among captuers
 		for ix := noCaptIx; ix < len(*ml); ix++ {

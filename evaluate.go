@@ -45,7 +45,7 @@ func evaluate(b *boardStruct) int {
 	return ev
 }
 
-// Score returns the piece square table value for a given piece on a given square. Stage = MG/EG
+// Score returns the pc2pt square table value for a given pc2pt on a given square. Stage = MG/EG
 func pSqScore(p12, sq int) int {
 	return pSqTab[p12][sq]
 }
@@ -90,8 +90,8 @@ func pSqInit() {
 	// for Black
 	for pc := Pawn; pc <= King; pc++ {
 
-		wP12 := pc2P12(pc, WHITE)
-		bP12 := pc2P12(pc, BLACK)
+		wP12 := pt2pc(pc, WHITE)
+		bP12 := pt2pc(pc, BLACK)
 
 		for bSq := 0; bSq < 64; bSq++ {
 			wSq := oppRank(bSq)
