@@ -54,6 +54,7 @@ func (s *searchLimits) setInfinite(b bool) {
 	s.infinite = b
 }
 
+// Principles variations list
 type pvList []move
 
 func (pv *pvList) new() {
@@ -105,7 +106,7 @@ func root(toEngine chan bool, frEngine chan string) {
 	b := &board
 	ml := make(moveList, 0, 60)
 	for range toEngine {
-		limits.startTime, limits.nextTime = time.Now(), time.Now()
+		limits.startTime, limits.nextTime = time.Now(), time.Now() // Need 2 time stamps
 		alpha, beta := -minEval, maxEval
 		bm, bs := noMove, noScore
 		depth := limits.depth
@@ -164,14 +165,14 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 	ml := make(moveList, 0, 60)
 	genAndSort(b, &ml)
 
-	bm, bs := noMove, noScore
+	bm, bs := noMove, noScore // best move, best score
 	var childPV pvList
 	for _, mv := range ml {
 		childPV.clear()
 		b.move(mv)
 		score := -search(-beta, -alpha, depth-1, ply+1, &childPV, b)
 		b.unmove(mv)
-		if score > bs {
+		if score > bs { // score > best score
 			bs = score
 			pv.catenate(mv, &childPV)
 
@@ -212,6 +213,7 @@ func genAndSort(b *boardStruct, ml *moveList) {
 	ml.sort()
 }
 
+//set ev +-1 coefficient, depends on color (black -1, white 1)
 func signEval(stm color, ev int) int {
 	if stm == BLACK {
 		return -ev
