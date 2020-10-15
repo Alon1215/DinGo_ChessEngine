@@ -59,6 +59,11 @@ func (m *move) packEval(score int) {
 	(*m) |= move(score+30000) << evalShift
 }
 
+// compare two moves - only frSq amd toSq
+func (m move) cmpFrTo(m2 move) bool {
+	return m.fr() == m2.fr() && m.to() == m2.to()
+}
+
 func (m move) eval() int {
 	return int((uint(m)&uint(evalMask))>>evalShift) - 30000
 }

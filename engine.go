@@ -139,16 +139,11 @@ func root(toEngine chan bool, frEngine chan string) {
 	}
 }
 
-//TODO search: the 'stop' command
-//TODO search: time handling basic movetime
-//TODO search: alpha Beta
-
 //TODO search: generate all moves and put captures first  (temporary)
 //TODO search: qs
-//TODO search: killer moves
-//TODO search: hash table
-//TODO search: history table or counter move table
+//TODO search: hash table / transportation table
 //TODO search: move generation. More fast and accurate
+//TODO search: history table and maybe counter move table
 //TODO search: Null Move
 //TODO search: Late Move Reduction
 //TODO search: Internal Iterative Depening
@@ -163,20 +158,32 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 	}
 	pv.clear()
 	ml := make(moveList, 0, 60)
-	genAndSort(b, &ml)
+	//genAndSort(b, &ml)
+	genInOrder(b, &ml, ply)
 
 	bm, bs := noMove, noScore // best move, best score
-	var childPV pvList
+	childPV := make(pvList, 0, maxPly)
 	for _, mv := range ml {
+		x := b.sq[A1]
+		y := b.sq[B2]
+		if !b.move(mv) {
+			continue
+		}
+
 		childPV.clear()
-		b.move(mv)
+
 		score := -search(-beta, -alpha, depth-1, ply+1, &childPV, b)
 		b.unmove(mv)
-		if score > bs { // score > best score
+
+		if score > bs {
 			bs = score
 			pv.catenate(mv, &childPV)
 
 			if score >= beta { // beta cutoff
+				// add killer and update history
+				if mv.cp() == empty && mv.pr() == empty { // not a caption, not promotion. thus - a killer
+					killers.add(mv, ply)
+				}
 				return score
 			}
 			if score > alpha {
@@ -184,6 +191,7 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 				_ = bm
 				alpha = score
 			}
+
 		}
 		if time.Since(limits.nextTime) >= time.Duration(time.Second) {
 			t1 := time.Since(limits.startTime)
@@ -213,6 +221,26 @@ func genAndSort(b *boardStruct, ml *moveList) {
 	ml.sort()
 }
 
+// generate capture moves first, then killers, then non captures
+func genInOrder(b *boardStruct, ml *moveList, ply int) {
+	ml.clear()
+	b.genAllCaptures(ml)
+	noCaptIx := len(*ml)
+	b.genAllNonCaptures(*ml)
+	if len(*ml)-noCaptIx > 2 {
+		//place killers first among captuers
+		for ix := noCaptIx; ix < len(*ml); ix++ {
+			mv := (*ml)[ix]
+			if killers[ply].k1.cmpFrTo(mv) {
+				(*ml)[ix], (*ml)[noCaptIx] = (*ml)[noCaptIx], (*ml)[ix]
+			} else if killers[ply].k2.cmpFrTo(mv) {
+				(*ml)[ix], (*ml)[noCaptIx+1] = (*ml)[noCaptIx+1], (*ml)[ix]
+			}
+		}
+	}
+
+}
+
 //set ev +-1 coefficient, depends on color (black -1, white 1)
 func signEval(stm color, ev int) int {
 	if stm == BLACK {
@@ -220,3 +248,28 @@ func signEval(stm color, ev int) int {
 	}
 	return ev
 }
+
+///////////////////////////////////////////// Killers  //////////////////////////////////////////////////////
+// KillerStrucs holds the killer moves per ply
+
+type killerStruct [maxPly]struct {
+	k1 move
+	k2 move
+}
+
+func (k *killerStruct) clear() {
+	for ply := 0; ply < maxPly; ply++ {
+		k[ply].k1 = noMove
+		k[ply].k2 = noMove
+	}
+}
+
+// add killer 1 and 2 ( not inCheck, captures and promotions)
+func (k *killerStruct) add(mv move, ply int) {
+	if !k[ply].k1.cmpFrTo(mv) {
+		k[ply].k2 = k[ply].k1
+		k[ply].k1 = mv
+	}
+}
+
+var killers killerStruct

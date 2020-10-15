@@ -741,6 +741,28 @@ func (b *boardStruct) genAllMoves(ml *moveList) {
 	b.filterLegals(ml)
 }
 
+// generate all captures
+func (b *boardStruct) genAllCaptures(ml *moveList) {
+	oppBB := b.wbBB[b.stm.opp()] // opponent pieces
+	b.genPawnMoves(ml)
+	b.genKnightMoves(ml, oppBB)
+	b.genBishopMoves(ml, oppBB)
+	b.genRookMoves(ml, oppBB)
+	b.genQueenMoves(ml, oppBB)
+	b.genKingMoves(ml, oppBB)
+}
+
+// generate all captures
+func (b *boardStruct) genAllNonCaptures(ml *moveList) {
+	emptyBB := ^b.allBB()
+	b.genPawnMoves(ml)
+	b.genKnightMoves(ml, emptyBB)
+	b.genBishopMoves(ml, emptyBB)
+	b.genRookMoves(ml, oppBemptyBBB)
+	b.genQueenMoves(ml, emptyBB)
+	b.genKingMoves(ml, emptyBB)
+}
+
 // generate all legal moves
 func (b *boardStruct) filterLegals(ml *moveList) {
 	for ix := len(*ml) - 1; ix >= 0; ix-- {
