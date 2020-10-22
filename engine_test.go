@@ -121,12 +121,12 @@ func Test_see(t *testing.T) {
 		{"Bxf7", C4, F7, "rnbqk2r/pppp1pp1/5n1p/2b1p1N1/2B1P3/8/PPPP1PPP/RNBQK2R w KQkq - 0 5", 100},
 
 		// Mixed
-		{"Bxh7", D3, H7, "r2q1rk1/pp1bbppp/2n1pn2/2pp2N1/3P1B2/2PBP3/PP1N1PPP/R2QK2R w KQ - 6 9", -225},
+		{"Bxh7", D3, H7, "r2q1rk1/pp1bbppp/2n1pn2/2pp2N1/3P1B2/2PBP3/PP1N1PPP/R2QK2R w KQ - 6 9", -250},
 		{"Nxh7", G5, H7, "r2q1rk1/pp1bbppp/2n1pn2/2pp2N1/3P1B2/2PBP3/PP1N1PPP/R2QK2R w KQ - 6 9", -225},
 		{"Nxf7", G5, F7, "r2q1rk1/pp1bbppp/2n1pn2/2pp2N1/3P1B2/2PBP3/PP1N1PPP/R2QK2R w KQ - 6 9", -225},
 		{"Nxe6", G5, E6, "r2q1rk1/pp1bbppp/2n1pn2/2pp2N1/3P1B2/2PBP3/PP1N1PPP/R2QK2R w KQ - 6 9", -225},
-		{"d5xf3 a", D5, F3, "2kr1bnr/pb3ppp/1p2p3/2pqn3/8/P1PP1NP1/1P3PBP/RNBQ1RK1 b - - 0 10", -300},
-		{"d5xf3 b", D5, F3, "r3kbnr/pb3ppp/1p2p3/2pqn3/8/2PP1NP1/PP3PBP/RNBQ1RK1 b kq - 4 9", -300},
+		{"d5xf3 a", D5, F3, "2kr1bnr/pb3ppp/1p2p3/2pqn3/8/P1PP1NP1/1P3PBP/RNBQ1RK1 b - - 0 10", -275},
+		{"d5xf3 b", D5, F3, "r3kbnr/pb3ppp/1p2p3/2pqn3/8/2PP1NP1/PP3PBP/RNBQ1RK1 b kq - 4 9", -275},
 		{"d5xd3", D5, D3, "r3kbnr/pb3ppp/1p2p3/2pqn3/8/2PP1NP1/PP3PBP/RNBQ1RK1 b kq - 4 9", 100},
 
 		{"Dxg7", G4, G7, "r3kbnr/pb3ppp/1p2p3/2pqn3/3N2Q1/2PP2P1/PP3PBP/RNB2RK1 w kq - 4 3", -850},
@@ -140,7 +140,7 @@ func Test_see(t *testing.T) {
 		{"w ungarded pawn", B5, C4, "rnbqkbnr/p1pppppp/8/1p6/2P5/8/PP1PPPPP/RNBQKBNR b KQkq - 0 2", 100},
 
 		{"f3xe5", F3, E5, "r3kbnr/pb3ppp/1p2p3/2pqn3/8/2PP1NP1/PP3PBP/RNBQ1RK1 w kq - 4 9", 0},
-		{"Bxg5 a", C1, G5, "rnbqkbnr/pppp3p/4p3/5pp1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 3", -225},
+		{"Bxg5 a", C1, G5, "rnbqkbnr/pppp3p/4p3/5pp1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 3", -250},
 		{"Bxg5 b", C1, G5, "rnbqkbnr/ppppp2p/8/5pp1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 3", 100},
 		{"exf5", E4, F5, "rnbqkbnr/ppppp2p/8/5pp1/3PP3/8/PPP2PPP/RNBQKBNR w KQkq - 0 3", 100},
 		{"ungarded pawn", C4, B5, "rnbqkbnr/p1pppppp/8/1p6/2P5/8/PP1PPPPP/RNBQKBNR w KQkq - 0 2", 100},
@@ -237,17 +237,17 @@ func Test_QS(t *testing.T) {
 		{"", "Pawn promotes with capture. B under. This special case is not working prperly", "position fen 3b1n2/1k2P3/8/q7/8/8/6K1/8 w - - 0 1", pieceVal[wP] - pieceVal[wB] - pieceVal[wN], 30},
 
 		// Knight
-		{"WN-P", "White is up knight-pawn", "position fen rnbqkbnr/ppp1pppp/8/3p4/1N6/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", pieceVal[wN] - pieceVal[wP], 20},
-		{"wN+q", "White is up knight and queen", "position fen rnb1kbnr/ppp1pppp/8/3n4/5N2/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", pieceVal[wN] + pieceVal[wQ], 20},
-		{"bN capt", "Bl Knigh captures guarded W queen", "position fen rnbqkbnr/ppp1pppp/8/3n4/5N2/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1", pieceVal[wN], 20},
+		{"", "White is up knight-pawn", "position fen rnbqkbnr/ppp1pppp/8/3p4/1N6/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", pieceVal[wN] - pieceVal[wP], 20},
+		{"", "White is up knight and queen", "position fen rnb1kbnr/ppp1pppp/8/3n4/5N2/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", pieceVal[wN] + pieceVal[wQ], 20},
+		{"", "Bl Knigh captures guarded W queen", "position fen rnbqkbnr/ppp1pppp/8/3n4/5N2/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1", pieceVal[wN], 20},
 		// Bishop
-		{"wB", "White is up bishop and queen", "position fen rnb1kbnr/ppp1pppp/8/3p4/2B5/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", pieceVal[wB] + pieceVal[wQ], 30},
-		{"B capt N", "Bishop captures guarded knight", "position fen rnbqkbnr/ppp1pppp/8/3n4/4B3/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", 25, 10},
+		{"", "White is up bishop and queen", "position fen rnb1kbnr/ppp1pppp/8/3p4/2B5/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", pieceVal[wB] + pieceVal[wQ], 30},
+		{"", "Bishop captures guarded knight", "position fen rnbqkbnr/ppp1pppp/8/3n4/4B3/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", 25, 10},
 		{"", "Black is up a bishop", "position fen rnbqkbnr/ppp1pppp/8/3b4/4Q3/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1", pieceVal[wB], 25},
 		// Rook
-		{"wR+Q", "White is up Rook and queen", "position fen rnb1kbnr/ppp1pppp/8/3p4/3R4/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", pieceVal[wR] + pieceVal[wQ], 30},
-		{"wR+N", "White is up Rook vs knight", "position fen rnbqkbnr/ppp1pppp/8/3n4/3R4/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", pieceVal[wR] - pieceVal[wN], 20},
-		{"bR up", "Black is up a Rook", "position fen rnbqkbnr/ppp1pppp/8/3r1B2/8/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1", pieceVal[wR], 25},
+		{"", "White is up Rook and queen", "position fen rnb1kbnr/ppp1pppp/8/3p4/3R4/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", pieceVal[wR] + pieceVal[wQ], 30},
+		{"", "White is up Rook vs knight", "position fen rnbqkbnr/ppp1pppp/8/3n4/3R4/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", pieceVal[wR] - pieceVal[wN], 20},
+		{"", "Black is up a Rook", "position fen rnbqkbnr/ppp1pppp/8/3r1B2/8/8/PP1PPPPP/RNBQKBNR b KQkq - 0 1", pieceVal[wR], 15},
 		// Queen
 		{"", "White is up a Queen vs a Pawn", "position fen rnbqkbnr/ppp1pppp/8/3p4/4Q3/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", pieceVal[wQ] - pieceVal[wP], 20},
 		{"", "White is up 2 Queens", "position fen rnb1kbnr/ppp1pppp/8/3n4/2Q5/8/PP1PPPPP/RNBQKBNR w KQkq - 0 1", pieceVal[wQ] * 2, 50},
@@ -265,145 +265,6 @@ func Test_QS(t *testing.T) {
 
 			if val < tt.wantEval-tt.wantDelta || val > tt.wantEval+tt.wantDelta {
 				t.Errorf("%v:  %v Should be in [%v,  %v] %v", tt.name, val, tt.wantEval-tt.wantDelta, tt.wantEval+tt.wantDelta, tt.comment)
-			}
-
-		})
-	}
-}
-
-func Test_nextNormal(t *testing.T) {
-	tests := []struct {
-		name              string
-		pos               string
-		transMove, k1, k2 string
-		goodCapt          []string
-		validGoodC        int
-		badCapt           []string
-		validBadC         int
-		nonCapt           []string
-		validNonC         int
-		badNonCapt        []string
-		validBadNonC      int
-	}{
-		{"London", "fen rnbqk2r/pp3ppp/3bpn2/P1pp4/3P1B2/2PBP3/1P1N1PPP/R2QK1NR b KQkq - 0 8", "d6f4", "e8g8", "c8f5", []string{"c5d4", "d6f4"}, 1, []string{"d8a5"}, 1, []string{"b8c6", "b7b6"}, 2, []string{"d6e5", "f6g4", "f6h5"}, 3},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			b := &board
-			handlePosition("position " + tt.pos)
-			var transMove, k1, k2 move
-			mFr, mTo := fen2Sq[tt.transMove[0:2]], fen2Sq[tt.transMove[2:]]
-			mPc, mCp := board.sq[mFr], board.sq[mTo]
-			transMove.packMove(mFr, mTo, mPc, mCp, empty, b.ep, b.castlings)
-
-			mFr, mTo = fen2Sq[tt.k1[0:2]], fen2Sq[tt.k1[2:]]
-			mPc, mCp = board.sq[mFr], board.sq[mTo]
-			k1.packMove(mFr, mTo, mPc, mCp, empty, b.ep, b.castlings)
-
-			mFr, mTo = fen2Sq[tt.k2[0:2]], fen2Sq[tt.k2[2:]]
-			mPc, mCp = board.sq[mFr], board.sq[mTo]
-			k2.packMove(mFr, mTo, mPc, mCp, empty, b.ep, b.castlings)
-			killers.add(k2, 0)
-			killers.add(k1, 0)
-
-			history.clear()
-			// incr history for good non captures
-			for _, strMv := range tt.nonCapt {
-				mFr, mTo = fen2Sq[strMv[0:2]], fen2Sq[strMv[2:]]
-				mPc, mCp = board.sq[mFr], board.sq[mTo]
-
-				history.inc(mFr, mTo, b.stm, 8)
-			}
-
-			var genInfo = genInfoStruct{sv: 0, ply: 0, transMove: transMove}
-			var mv move
-			var msg string
-
-			// trans
-			if mv, msg = nextNormal(&genInfo, &board); !mv.cmp(transMove) {
-				t.Errorf("%v: nextNormal() = %v, want transMove=%v", msg, mv, transMove)
-			}
-
-			//good capt
-			cntFound := 0
-			ix := 0
-			for mv, msg = nextNormal(&genInfo, &board); genInfo.sv <= nextGoodCp; mv, msg = nextNormal(&genInfo, &board) {
-				for _, strMv := range tt.goodCapt {
-					if mv.String() == strMv {
-						fmt.Println("found good capt", mv, mv.eval())
-						cntFound++
-					}
-				}
-				ix++
-			}
-			if cntFound != tt.validGoodC {
-				t.Errorf("cntFound=%v, didn't find all goodCapt %v", cntFound, tt.validGoodC)
-			}
-
-			//k1
-			if !mv.cmp(k1) {
-				t.Errorf("nextNormal() = %v, want k1=%v", mv, k1)
-			}
-			mv, msg = nextNormal(&genInfo, &board)
-
-			//k2 not legal
-
-			//good non capt
-			cntFound = 0
-			cntFound2 := 0
-			ix = 0
-			for genInfo.sv <= nextNonCp {
-				if mv.String() == transMove.String() {
-					t.Errorf("nextNormal() = %v, DON'T want transMove=%v", mv, transMove)
-				}
-				if mv.String() == k1.String() {
-					t.Errorf("nextNormal() = %v, DON'T want k1=%v", mv, k1)
-				}
-				if mv.String() == k2.String() {
-					t.Errorf("nextNormal() = %v, DON'T want k2=%v", mv, k2)
-				}
-
-				for _, strMv := range tt.nonCapt {
-					if mv.String() == strMv {
-						fmt.Println(msg, "found good noncapt", mv, int(history.get(mv.fr(), mv.to(), b.stm)))
-						cntFound++
-					}
-				}
-				for _, strMv := range tt.badNonCapt {
-					if mv.String() == strMv {
-						fmt.Println(msg, "found bad noncapt", mv, int(history.get(mv.fr(), mv.to(), b.stm)))
-						cntFound2++
-					}
-				}
-				mv, msg = nextNormal(&genInfo, &board)
-				ix++
-			}
-			if cntFound != tt.validNonC {
-				t.Errorf("cntFound=%v, didn't find all nonCapt %v", cntFound, tt.validNonC)
-			}
-			if cntFound2 != tt.validBadNonC {
-				t.Errorf("cntFound=%v, didn't find all bad nonCapt %v", cntFound2, tt.validBadNonC)
-			}
-
-			//badCp
-			cntFound = 0
-			ix = 0
-			for mv != noMove {
-				if mv.String() == transMove.String() {
-					t.Errorf("nextNormal() = %v, DON'T want transMove=%v", mv, transMove)
-				}
-
-				for _, strMv := range tt.badCapt {
-					if mv.String() == strMv {
-						fmt.Println("found badCapt", mv, mv.eval())
-						cntFound++
-					}
-				}
-				mv, msg = nextNormal(&genInfo, &board)
-				ix++
-			}
-			if cntFound != tt.validBadC {
-				t.Errorf("cntFound=%v, didn't find all badCapt %v", cntFound, tt.validBadC)
 			}
 
 		})

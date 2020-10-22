@@ -1,6 +1,6 @@
 # DinGo (chess engine)
 Chess engine (following UCI protocol) fully implemented in Go (Golang).
-Built as a part of [Tomer Gonen](https://github.com/yodatk)'s and my chess engines competition at 30.10.20. 
+Built as a part of [Tomer Gonen](https://github.com/yodatk)'s and my chess engines competition which will take place at 30.10.20 . 
 
 The engine will be featuring state of the art search techniques (alpha-beta search, tranportation table) and is based on bitboards. Magic numbers for bitBoards will be used for move generation.
 

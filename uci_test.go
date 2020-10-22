@@ -27,7 +27,7 @@ func Test_Uci(t *testing.T) {
 		cmd    string
 		wanted []string
 	}{
-		{"uci", "uci", []string{"id name DinGo", "id author Alon1215", "option name Hash type spin default", "option name Threads type spin default", "uciok"}},
+		{"uci", "uci", []string{"id name GoBit", "id author Carokanns", "option name Hash type spin default", "option name Threads type spin default", "uciok"}},
 		{"isready", "isready", []string{"readyok"}},
 		//{"set Hash", "setoption name Hash value 256", []string{"info string setoption not implemented"}},
 		{"skit", "skit", []string{"info string unknown cmd skit"}},
