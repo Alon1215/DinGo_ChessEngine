@@ -1,5 +1,7 @@
 package main
 
+import "strings"
+
 func main() {
 	tell("info string Hello DinGo")
 
@@ -13,9 +15,11 @@ func main() {
 func init() {
 	initFen2Sq()
 	initMagic()
+	initKeys()
 	initAtksKings()
 	initAtksKnights()
 	initCastlings()
-	pSqInit()
+	pcSqInit()
 	board.newGame()
+	handleSetOption(strings.Split("setoption name hash value 32", " "))
 }

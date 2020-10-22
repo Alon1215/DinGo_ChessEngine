@@ -40,19 +40,19 @@ func evaluate(b *boardStruct) int {
 			continue
 		}
 		ev += pieceVal[p12]
-		ev += pSqScore(p12, sq)
+		ev += pcSqScore(p12, sq)
 	}
 	return ev
 }
 
 // Score returns the pc2pt square table value for a given pc2pt on a given square. Stage = MG/EG
-func pSqScore(p12, sq int) int {
+func pcSqScore(p12, sq int) int {
 	return pSqTab[p12][sq]
 }
 
 // PstInit intits the pieces-square-tables when the program starts
-func pSqInit() {
-	tell("info string pStInit startar")
+func pcSqInit() {
+	tell("info string pStInit starter")
 	for p12 := 0; p12 < 12; p12++ {
 		for sq := 0; sq < 64; sq++ {
 			pSqTab[p12][sq] = 0

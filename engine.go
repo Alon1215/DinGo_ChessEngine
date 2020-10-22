@@ -104,7 +104,7 @@ func root(toEngine chan bool, frEngine chan string) {
 	pv.new()
 	ml.new(60)
 	b := &board
-	for _ = range toEngine {
+	for range toEngine {
 		limits.startTime, limits.lastTime = time.Now(), time.Now()
 		cntNodes = 0
 

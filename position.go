@@ -909,7 +909,7 @@ func (b *boardStruct) genBPawnNonCapt(ml *moveList) {
 
 // generates all pseudomoves
 func (b *boardStruct) genAllMoves(ml *moveList) {
-	b.genPawnMoves(ml)
+	b.genPawnNonCapt(ml)
 	b.genKnightMoves(ml, ^b.wbBB[b.stm])
 	b.genBishopMoves(ml, ^b.wbBB[b.stm])
 	b.genRookMoves(ml, ^b.wbBB[b.stm])
