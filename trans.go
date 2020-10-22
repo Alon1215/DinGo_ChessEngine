@@ -62,6 +62,25 @@ func castlKey(castling uint) uint64 {
 	return randCastl[castling]
 }
 
+func checkKey(b *boardStruct) bool {
+	key := uint64(0)
+	for sq, pc := range b.sq {
+		if pc == empty {
+			continue
+		}
+
+		key ^= pcSqKey(pc, sq)
+	}
+	if b.stm == BLACK {
+		key = ^key
+	}
+	if key != b.key {
+		return false
+	}
+
+	return true
+}
+
 ////////////////////////////////////////////////////////
 //////////////////////// TRANS /////////////////////////
 const entrySize = 128 / 8

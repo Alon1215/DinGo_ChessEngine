@@ -68,8 +68,13 @@ func (m *move) packEval(score int) {
 
 // compare two moves - only frSq and toSq
 func (m move) cmpFrTo(m2 move) bool {
-	// return (m & move(^evalMask)) == (m2 & move(^evalMask))
 	return m.fr() == m2.fr() && m.to() == m2.to()
+}
+
+// compare two moves - only frSq, toSq and pc
+func (m move) cmpFrToP(m2 move) bool {
+	// return (m & move(^evalMask)) == (m2 & move(^evalMask))
+	return m.fr() == m2.fr() && m.to() == m2.to() && m.pc() == m2.pc()
 }
 
 // compare two moves
