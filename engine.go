@@ -8,14 +8,13 @@ import (
 )
 
 const (
-	maxDepth = 8
+	maxDepth = 100
 	maxPly   = 100
 )
 
 var cntNodes uint64
 
-//TODO search limits: start clock and testing for movetime
-//TODO search limits: counting nodes and testing for limit.nodes
+//TODO search limits: count nodes and test for limit.nodes
 //TODO search limits: limit.depth
 
 //TODO search limits: time per game w/wo increments
@@ -26,7 +25,7 @@ type searchLimits struct {
 	moveTime  int // in milliseconds
 	infinite  bool
 	startTime time.Time
-	nextTime  time.Time
+	lastTime  time.Time
 
 	//////////////// current //////////
 	stop bool
@@ -55,7 +54,6 @@ func (s *searchLimits) setInfinite(b bool) {
 	s.infinite = b
 }
 
-// Principles variations list
 type pvList []move
 
 func (pv *pvList) new() {
@@ -89,7 +87,6 @@ func (pv *pvList) String() string {
 }
 
 func engine() (toEngine chan bool, frEngine chan string) {
-	fmt.Println("info string Hello from engine")
 	frEngine = make(chan string)
 	toEngine = make(chan bool)
 	go root(toEngine, frEngine)
@@ -97,87 +94,123 @@ func engine() (toEngine chan bool, frEngine chan string) {
 	return
 }
 
-//TODO root: Iterative Depening
-
 //TODO root: Aspiration search
 func root(toEngine chan bool, frEngine chan string) {
-	var depth int
+	var depth, alpha, beta int
 	var pv pvList
 	var childPV pvList
+	var ml moveList
 	childPV.new()
 	pv.new()
+	ml.new(60)
 	b := &board
-	ml := make(moveList, 0, 60)
 	for _ = range toEngine {
-		limits.startTime, limits.nextTime = time.Now(), time.Now()
-		alpha, beta := minEval, maxEval
-
+		limits.startTime, limits.lastTime = time.Now(), time.Now()
 		cntNodes = 0
+
 		killers.clear()
 		ml.clear()
 		pv.clear()
-		genAndSort(b, &ml)
+		trans.initSearch() // increase age counters=0
+		genAndSort(0, b, &ml)
 		bm := ml[0]
 		bs := noScore
 		depth = limits.depth
-		for depth = 1; depth <= limits.depth; depth++ {
-			bs = noScore
-			for ix := range ml {
-				mv := &ml[ix]
+		for depth = 1; depth <= limits.depth && !limits.stop; depth++ {
+			ml.sort()
+			bs = noScore // bm keeps the best from prev iteration in case of immediate stop before first is done in this iterastion
+			alpha, beta = minEval, maxEval
+			for ix, mv := range ml {
 				childPV.clear()
 
-				b.move(*mv)
+				b.move(mv)
 				tell("info depth ", strconv.Itoa(depth), " currmove ", mv.String(), " currmovenumber ", strconv.Itoa(ix+1))
+
 				score := -search(-beta, -alpha, depth-1, 1, &childPV, b)
-				b.unmove(*mv)
+				b.unmove(mv)
 				if limits.stop {
 					break
 				}
-				mv.packEval(score)
+				ml[ix].packEval(score)
 				if score > bs {
 					bs = score
-					pv.catenate(*mv, &childPV)
+					pv.catenate(mv, &childPV)
 
-					bm = *mv
+					bm = ml[ix]
 					alpha = score
-
+					if depth >= 0 {
+						trans.store(b.fullKey(), mv, depth, 0, score, scoreTypeLower)
+					}
 					t1 := time.Since(limits.startTime)
 					tell(fmt.Sprintf("info score cp %v depth %v nodes %v time %v pv ", bm.eval(), depth, cntNodes, int(t1.Seconds()*1000)), pv.String())
 				}
+
 			}
-			ml.sort()
+
+		}
+		ml.sort()
+		trans.store(b.fullKey(), bm, depth-1, 0, bs, scoreType(bs, alpha, beta))
+		// time, nps, ebf
+		t1 := time.Since(limits.startTime)
+		nps := float64(0)
+		if t1.Seconds() != 0 {
+			nps = float64(cntNodes) / t1.Seconds()
 		}
 
-		t1 := time.Since(limits.startTime)
-		tell(fmt.Sprintf("info score cp %v depth %v nodes %v time %v pv ", bm.eval(), depth-1, cntNodes, int(t1.Seconds()*1000)), pv.String())
+		tell(fmt.Sprintf("info score cp %v depth %v nodes %v  time %v nps %v pv %v", bm.eval(), depth-1, cntNodes, int(t1.Seconds()*1000), uint(nps), pv.String()))
 		frEngine <- fmt.Sprintf("bestmove %v%v", sq2Fen[bm.fr()], sq2Fen[bm.to()])
 	}
 }
 
-//TODO search: generate all moves and put captures first  (temporary)
-//TODO search: qs
-//TODO search: hash table / transportation table
-//TODO search: move generation. More fast and accurate
+//TODO search: hash table/transposition table
+
 //TODO search: history table and maybe counter move table
+//TODO search: move generation. More fast and accurate
 //TODO search: Null Move
 //TODO search: Late Move Reduction
 //TODO search: Internal Iterative Depening
 //TODO search: Delta Pruning
 //TODO search: more complicated time handling schemes
 //TODO search: other reductions and extensions
-
 func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 	cntNodes++
 	if depth <= 0 {
-		return signEval(b.stm, evaluate(b))
+		//return signEval(b.stm, evaluate(b))
+		return qs(beta, b)
 	}
 	pv.clear()
-	ml := make(moveList, 0, 60)
-	//genAndSort(b, &ml)
-	genInOrder(b, &ml, ply)
 
-	bm, bs := noMove, noScore // best move, best score
-	childPV := make(pvList, 0, maxPly)
+	transMove := noMove
+	transDepth := depth
+	pvNode := depth > 0 && beta != alpha+1
+	if depth < 0 { //inCheck?
+		var transSc, scType int
+		ok := false
+		key := b.fullKey() // ep and castling included
+		if transMove, transSc, scType, ok = trans.retrieve(key, transDepth, ply); ok && !pvNode {
+			switch {
+			case scType == scoreTypeLower && transSc >= alpha:
+				trans.cPrune++
+				return transSc
+			case scType == scoreTypeLower && transSc <= beta:
+				trans.cPrune++
+				return transSc
+			case scType == scoreTypeBetween:
+				trans.cPrune++
+				return transSc
+			} // TODO: clean code and logic in the switch (delete and refactor)
+		}
+	}
+	var ml moveList
+	ml.new(60)
+
+	//genAndSort(b, &ml)
+	genInOrder(b, &ml, ply, transMove)
+
+	bs := noScore // best score
+	bm := noMove  // best move
+	var childPV pvList
+	childPV.new() // TODO? make it smaller for each depth maxDepth-ply
 	for _, mv := range ml {
 		if !b.move(mv) {
 			continue
@@ -186,35 +219,41 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 		childPV.clear()
 
 		score := -search(-beta, -alpha, depth-1, ply+1, &childPV, b)
+
 		b.unmove(mv)
 
 		if score > bs {
 			bs = score
+			bm = mv
 			pv.catenate(mv, &childPV)
+			if score > alpha {
+				alpha = score
+				trans.store(b.fullKey(), mv, depth, ply, score, scoreType(score, alpha, beta))
+			}
 
 			if score >= beta { // beta cutoff
 				// add killer and update history
-				if mv.cp() == empty && mv.pr() == empty { // not a caption, not promotion. thus - a killer
+				if mv.cp() == empty && mv.pr() == empty {
 					killers.add(mv, ply)
+				}
+				if mv.cmp(transMove) {
+					trans.cPrune++
 				}
 				return score
 			}
-			if score > alpha {
-				bm = mv
-				_ = bm
-				alpha = score
-			}
-
 		}
-		if time.Since(limits.nextTime) >= time.Duration(time.Second) {
+		if time.Since(limits.lastTime) >= time.Duration(time.Second) {
 			t1 := time.Since(limits.startTime)
 			tell(fmt.Sprintf("info time %v nodes %v nps %v", int(t1.Seconds()*1000), cntNodes, cntNodes/uint64(t1.Seconds())))
-			limits.nextTime = time.Now()
+			limits.lastTime = time.Now()
 		}
 
 		if limits.stop {
 			return alpha
 		}
+	}
+	if bm.cmp(transMove) {
+		trans.cBest++
 	}
 	return bs
 }
@@ -278,7 +317,7 @@ func see(fr, to int, b *boardStruct) int {
 	us := pcColor(pc)
 	them := us.opp()
 
-	// All the attackers to the to-sq, but first remove the moving pc2pt and use X-ray to the to-sq
+	// All the attackers to the to-sq, but first remove the moving piece and use X-ray to the to-sq
 	occ := b.allBB()
 	occ.clr(fr)
 	attackingBB :=
@@ -297,7 +336,7 @@ func see(fr, to int, b *boardStruct) int {
 	// Now we continue to keep track of the material gain/loss for each capture
 	// Always remove the last attacker and use x-ray to find possible new attackers
 
-	lastAtkVal := abs(pieceVal[pc]) // save attacker pc2pt value for later use
+	lastAtkVal := abs(pieceVal[pc]) // save attacker piece value for later use
 	var captureList [32]int
 	captureList[0] = abs(pieceVal[cp])
 	n := 1
@@ -337,7 +376,7 @@ func see(fr, to int, b *boardStruct) int {
 		captureList[n] = -captureList[n-1] + lastAtkVal
 		n++
 
-		// save the value of tha capturing pc2pt to be used later
+		// save the value of tha capturing piece to be used later
 		lastAtkVal = pieceVal[pt2pc(pt, WHITE)] // using WHITE always gives positive integer
 		stm = stm.opp()                         // next side to move
 
@@ -362,15 +401,40 @@ func see(fr, to int, b *boardStruct) int {
 	return captureList[0]
 }
 
-func genAndSort(b *boardStruct, ml *moveList) {
+/* func genAndSort(b *boardStruct, ml *moveList) {
+	ml.clear()
+	b.genAllLegals(ml)
+	for ix, mv := range *ml {
+		b.move(mv)
+		v := evaluate(b)
+		b.unmove(mv)
 
-	b.genAllMoves(ml)
+		v = signEval(b.stm, v)
+		(*ml)[ix].packEval(v)
+	}
+
+	ml.sort()
+} */
+func genAndSort(ply int, b *boardStruct, ml *moveList) {
+	if ply > maxPly {
+		panic("wtf maxply")
+	}
+
+	ml.clear()
+	b.genAllLegals(ml)
 
 	for ix, mv := range *ml {
 		b.move(mv)
 		v := evaluate(b)
 		b.unmove(mv)
+		if killers[ply].k1.cmp(mv) {
+			v += 1000
+		} else if killers[ply].k2.cmp(mv) {
+			v += 900
+		}
+
 		v = signEval(b.stm, v)
+
 		(*ml)[ix].packEval(v)
 	}
 
@@ -378,26 +442,72 @@ func genAndSort(b *boardStruct, ml *moveList) {
 }
 
 // generate capture moves first, then killers, then non captures
-func genInOrder(b *boardStruct, ml *moveList, ply int) {
+// func genInOrder(b *boardStruct, ml *moveList, ply int) { // OLDER VERSION
+// 	ml.clear()
+// 	b.genAllCaptures(ml)
+// 	noCaptIx := len(*ml)
+// 	b.genAllNonCaptures(ml)
+
+// 	if len(*ml)-noCaptIx > 2 {
+// 		// place killers first among non captuers
+// 		for ix := noCaptIx; ix < len(*ml); ix++ {
+// 			mv := (*ml)[ix]
+// 			if killers[ply].k1.cmpFrTo(mv) {
+// 				(*ml)[ix], (*ml)[noCaptIx] = (*ml)[noCaptIx], (*ml)[ix]
+// 			} else if killers[ply].k2.cmpFrTo(mv) {
+// 				(*ml)[ix], (*ml)[noCaptIx+1] = (*ml)[noCaptIx+1], (*ml)[ix]
+// 			}
+// 		}
+// 	}
+
+// }
+
+// generate capture moves first, then killers, then non captures
+func genInOrder(b *boardStruct, ml *moveList, ply int, transMove move) {
 	ml.clear()
 	b.genAllCaptures(ml)
 	noCaptIx := len(*ml)
 	b.genAllNonCaptures(ml)
-	if len(*ml)-noCaptIx > 2 {
-		//place killers first among captuers
-		for ix := noCaptIx; ix < len(*ml); ix++ {
+	if transMove != noMove {
+		for ix := 0; ix < len(*ml); ix++ {
 			mv := (*ml)[ix]
-			if killers[ply].k1.cmpFrTo(mv) {
-				(*ml)[ix], (*ml)[noCaptIx] = (*ml)[noCaptIx], (*ml)[ix]
-			} else if killers[ply].k2.cmpFrTo(mv) {
-				(*ml)[ix], (*ml)[noCaptIx+1] = (*ml)[noCaptIx+1], (*ml)[ix]
+			if transMove.cmp(mv) {
+				(*ml)[ix], (*ml)[0] = (*ml)[0], (*ml)[ix]
+				break
 			}
 		}
 	}
+	pos1, pos2 := noCaptIx, noCaptIx+1
+	if (*ml)[pos1].cmp(transMove) {
+		noCaptIx++
+		pos1++
+		pos2++
+	}
 
+	if len(*ml)-noCaptIx > 2 {
+		// place killers first among non captures
+		cnt := 0
+		for ix := noCaptIx; ix < len(*ml); ix++ {
+			mv := (*ml)[ix]
+			switch {
+			case killers[ply].k1.cmpFrTo(mv) && !mv.cmpFrTo(transMove) && b.sq[mv.to()] == empty:
+				mv.packMove(mv.fr(), mv.to(), b.sq[mv.fr()], b.sq[mv.to()], mv.pr(), b.ep, b.castlings)
+				(*ml)[ix] = mv
+				(*ml)[ix], (*ml)[pos1] = (*ml)[pos1], (*ml)[ix]
+				cnt++
+			case killers[ply].k2.cmpFrTo(mv) && !mv.cmpFrTo(transMove) && b.sq[mv.to()] == empty:
+				mv.packMove(mv.fr(), mv.to(), b.sq[mv.fr()], b.sq[mv.to()], mv.pr(), b.ep, b.castlings)
+				(*ml)[ix] = mv
+				(*ml)[ix], (*ml)[pos2] = (*ml)[pos2], (*ml)[ix]
+				cnt++
+			}
+			if cnt >= 2 {
+				break
+			}
+		}
+	}
 }
 
-//set ev +-1 coefficient, depends on color (black -1, white 1)
 func signEval(stm color, ev int) int {
 	if stm == BLACK {
 		return -ev
@@ -405,14 +515,14 @@ func signEval(stm color, ev int) int {
 	return ev
 }
 
-///////////////////////////////////////////// Killers  //////////////////////////////////////////////////////
-// KillerStrucs holds the killer moves per ply
-
+/////////////////  Killers ///////////////////////////////////////////////
+// killerStruct holds the killer moves per ply
 type killerStruct [maxPly]struct {
 	k1 move
 	k2 move
 }
 
+// Clear killer moves
 func (k *killerStruct) clear() {
 	for ply := 0; ply < maxPly; ply++ {
 		k[ply].k1 = noMove
@@ -420,12 +530,30 @@ func (k *killerStruct) clear() {
 	}
 }
 
-// add killer 1 and 2 ( not inCheck, captures and promotions)
+// add killer 1 and 2 (Not inCheck, caaptures and promotions)
 func (k *killerStruct) add(mv move, ply int) {
-	if !k[ply].k1.cmpFrTo(mv) {
+	if !k[ply].k1.cmp(mv) {
 		k[ply].k2 = k[ply].k1
 		k[ply].k1 = mv
 	}
 }
 
 var killers killerStruct
+
+///////////////////////////// history table //////////////////////////////////
+type historyStruct [2][64][64]uint
+
+func (h *historyStruct) inc(fr, to int, stm color, depth int) {
+	h[stm][fr][to] += uint(depth * depth)
+}
+
+func (h *historyStruct) clear() {
+	for fr := 0; fr < 64; fr++ {
+		for to := 0; to < 64; to++ {
+			h[0][fr][to] = 0
+			h[1][fr][to] = 0
+		}
+	}
+}
+
+var history historyStruct

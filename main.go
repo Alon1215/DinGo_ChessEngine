@@ -11,7 +11,7 @@ func main() {
 // ----------------------
 
 func init() {
-	initFenSq2Int()
+	initFen2Sq()
 	initMagic()
 	initAtksKings()
 	initAtksKnights()

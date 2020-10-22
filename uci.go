@@ -16,8 +16,6 @@ var low = strings.ToLower
 var saveBm = ""
 
 func uci(input chan string) {
-	fmt.Println("info string Hello from uci")
-
 	toEng, frEng := engine()
 	var cmd string
 	var bm string
@@ -64,25 +62,31 @@ func uci(input chan string) {
 			board.printAllBB()
 		case "pm":
 			board.printAllLegals()
-		case "pe":
+		case "eval":
 			fmt.Println("eval =", evaluate(&board))
-		case "psee":
+		case "pos":
+			handleMyPositions(words)
+		case "key":
+			fmt.Printf("key = %x, fullkey=%x\n", board.key, board.fullKey())
+			index := board.fullKey() & uint64(trans.mask)
+			lock := trans.lock(board.fullKey())
+			fmt.Printf("index = %x, lock=%x\n", index, lock)
+		case "see":
 			fr, to := empty, empty
 			if len(words[1]) == 2 && len(words[2]) == 2 {
-				fr = fenSq2Int[words[1]]
-				to = fenSq2Int[words[2]]
+				fr = fen2Sq[words[1]]
+				to = fen2Sq[words[2]]
 			} else if len(words[1]) == 4 {
-				fr = fenSq2Int[words[1][0:2]]
-				to = fenSq2Int[words[2][2:]]
+				fr = fen2Sq[words[1][0:2]]
+				to = fen2Sq[words[1][2:]]
 			} else {
 				fmt.Println("error in fr/to")
 				continue
 			}
 
-			//fmt.Println("see = ", see(fr, to, &board))
-			fmt.Println("see = ", fr, to)
-		case "pqs":
-			fmt.Println("qs =", maxEval)
+			fmt.Println("see = ", see(fr, to, &board))
+		case "qs":
+			fmt.Println("qs =", qs(maxEval, &board))
 
 		default:
 			tell("info string unknown cmd ", cmd)
@@ -94,7 +98,7 @@ func uci(input chan string) {
 
 func handleUci() {
 	tell("id name GoBit")
-	tell("id author Alon Michaeli")
+	tell("id author Carokanns")
 
 	tell("option name Hash type spin default 128 min 16 max 1024")
 	tell("option name Threads type spin default 1 min 1 max 16")
@@ -151,9 +155,9 @@ func handleStop() {
 			saveBm = ""
 		}
 
-		limits.setStop(true)
 		limits.setInfinite(false)
 	}
+	limits.setStop(true)
 }
 
 // handleQuit not really necessary
@@ -169,16 +173,35 @@ func handleBm(bm string) {
 	tell(bm)
 }
 
-// not implemented uci commands
 func handleSetOption(words []string) {
 	// setoption name Hash value 256
-	tell("info string setoption not implemented")
+	if len(words) < 5 {
+		tell("info string Don't have this option " + strings.Join(words[:], " "))
+	}
+	if low(trim(words[1])) != "name" {
+		tell("info string 'name' is missing in this option " + strings.Join(words[:], " "))
+	}
+	switch low(trim(words[2])) {
+	case "hash":
+		if trim(low(words[3])) != "value" {
+			tell("info string 'value' is missing in this option " + strings.Join(words[:], " "))
+		}
+		if val, err := strconv.Atoi(trim(words[4])); err == nil {
+			if err = trans.new(val); err != nil {
+				tell(err.Error())
+			}
+		} else {
+			tell("info string The Hash value is not numeric " + strings.Join(words[:], " "))
+		}
+	default:
+		tell("info string Don't have this option " + strings.Join(words[:], " "))
+	}
 }
 
 // go  searchmoves <move1-moveii>/ponder/wtime <ms>/ btime <ms>/winc <ms>/binc <ms>/movestogo <x>/
 //     depth <x>/nodes <x>/movetime <ms>/mate <x>/infinite
 func handleGo(toEng chan bool, words []string) {
-	// TODO: Right ne can only handle one of them at a time. We need to be able to mix them
+	// TODO: Right now can only handle one of them at a time. We need to be able to mix them
 	limits.init()
 	if len(words) > 1 {
 		words[1] = trim(low(words[1]))
@@ -198,9 +221,13 @@ func handleGo(toEng chan bool, words []string) {
 		case "movestogo":
 			tell("info string go movestogo not implemented")
 		case "depth":
-			d, err := strconv.Atoi(words[2])
-			if err != nil {
-				tell("info string ", words[2], " not numeric")
+			d := -1
+			err := error(nil)
+			if len(words) >= 3 {
+				d, err = strconv.Atoi(words[2])
+			}
+			if d < 0 || err != nil {
+				tell("info string depth not numeric")
 				return
 			}
 			limits.setDepth(d)
@@ -226,10 +253,32 @@ func handleGo(toEng chan bool, words []string) {
 			tell("info string go ", words[1], " not implemented")
 		}
 	} else {
-		tell("info string go not implemented")
+		tell("info string suppose go infinite")
+		limits.setInfinite(true)
+		toEng <- true
 	}
 }
 
+func handleMyPositions(words []string) {
+	if len(words) < 2 {
+		tell("info string not correct pos command " + strings.Join(words[:], " "))
+	}
+
+	words[1] = trim(low(words[1]))
+	handleSetOption(strings.Split("setoption name hash value 256", " "))
+	switch words[1] {
+	case "london":
+		handlePosition("position startpos moves d2d4 d7d5 c1f4 g8f6 e2e3 c7c5 b1d2 b8c6 c2c3 e7e6 f1d3 f8d6")
+	case "phil":
+		handlePosition("position startpos moves e2e4 d7d6 d2d4 e7e5 d4e5 d6e5 d1d8 e8d8 g1f3 f7f6 b1c3 c7c6 f1c4")
+	case "english":
+		handlePosition("position startpos moves c2c4 e7e5 g2g3 b8c6 f1g2 g7g6 b1c3 f8g7 e2e4 d7d6 g1e2 g8f6")
+	default:
+		tell("info string not correct pos command " + words[1] + " doesn't exist. " + strings.Join(words[:], " "))
+	}
+}
+
+// not implemented uci commands
 func handlePonderhit() {
 	tell("info string ponderhit not implemented")
 }
