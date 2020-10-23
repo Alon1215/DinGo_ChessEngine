@@ -56,6 +56,16 @@ func uci(input chan string) {
 			handleQuit()
 			quit = true
 			continue
+		//////// Added commands, not part of the uci protocol ////////
+		case "perft":
+			if len(words) > 1 {
+				depth, err := strconv.Atoi(words[1])
+				if err != nil {
+					tell(err.Error())
+				} else {
+					startPerft(depth, &board)
+				}
+			}
 		case "pb":
 			board.Print()
 		case "pbb":
@@ -66,6 +76,8 @@ func uci(input chan string) {
 			fmt.Println("eval =", evaluate(&board))
 		case "pos":
 			handleMyPositions(words)
+		case "moves":
+			handleMyMoves(words)
 		case "key":
 			fmt.Printf("key = %x, fullkey=%x\n", board.key, board.fullKey())
 			index := board.fullKey() & uint64(trans.mask)
@@ -87,7 +99,10 @@ func uci(input chan string) {
 			fmt.Println("see = ", see(fr, to, &board))
 		case "qs":
 			fmt.Println("qs =", qs(maxEval, &board))
-
+		case "hist":
+			history.print(50)
+		case "moveval": // all moves and values
+			//handleMoveVal() // NOT IMPLEMNTED, (just print command)
 		default:
 			tell("info string unknown cmd ", cmd)
 		}
@@ -97,8 +112,8 @@ func uci(input chan string) {
 }
 
 func handleUci() {
-	tell("id name GoBit")
-	tell("id author Carokanns")
+	tell("id name DinGo")
+	tell("id author Alon Michaeli")
 
 	tell("option name Hash type spin default 128 min 16 max 1024")
 	tell("option name Threads type spin default 1 min 1 max 16")
@@ -262,19 +277,20 @@ func handleGo(toEng chan bool, words []string) {
 func handleMyPositions(words []string) {
 	if len(words) < 2 {
 		tell("info string not correct pos command " + strings.Join(words[:], " "))
-	}
+	} else {
 
-	words[1] = trim(low(words[1]))
-	handleSetOption(strings.Split("setoption name hash value 256", " "))
-	switch words[1] {
-	case "london":
-		handlePosition("position startpos moves d2d4 d7d5 c1f4 g8f6 e2e3 c7c5 b1d2 b8c6 c2c3 e7e6 f1d3 f8d6")
-	case "phil":
-		handlePosition("position startpos moves e2e4 d7d6 d2d4 e7e5 d4e5 d6e5 d1d8 e8d8 g1f3 f7f6 b1c3 c7c6 f1c4")
-	case "english":
-		handlePosition("position startpos moves c2c4 e7e5 g2g3 b8c6 f1g2 g7g6 b1c3 f8g7 e2e4 d7d6 g1e2 g8f6")
-	default:
-		tell("info string not correct pos command " + words[1] + " doesn't exist. " + strings.Join(words[:], " "))
+		words[1] = trim(low(words[1]))
+		handleSetOption(strings.Split("setoption name hash value 256", " "))
+		switch words[1] {
+		case "london":
+			handlePosition("position startpos moves d2d4 d7d5 c1f4 g8f6 e2e3 c7c5 b1d2 b8c6 c2c3 e7e6 f1d3 f8d6")
+		case "phil":
+			handlePosition("position startpos moves e2e4 d7d6 d2d4 e7e5 d4e5 d6e5 d1d8 e8d8 g1f3 f7f6 b1c3 c7c6 f1c4")
+		case "english":
+			handlePosition("position startpos moves c2c4 e7e5 g2g3 b8c6 f1g2 g7g6 b1c3 f8g7 e2e4 d7d6 g1e2 g8f6")
+		default:
+			tell("info string not correct pos command " + words[1] + " doesn't exist. " + strings.Join(words[:], " "))
+		}
 	}
 }
 
@@ -291,6 +307,11 @@ func handleDebug(words []string) {
 func handleRegister(words []string) {
 	// register later/name <x>/code <y>
 	tell("info string register not implemented")
+}
+
+func handleMyMoves(words []string) {
+	mvString := strings.Join(words[1:], " ")
+	parseMvs(mvString)
 }
 
 //------------------------------------------------------

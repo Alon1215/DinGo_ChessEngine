@@ -332,9 +332,9 @@ func isMateScore(sc int) bool {
 // in order to mix up different depths
 func removeMatePly(sc, ply int) int {
 	if sc < minEval+maxPly {
-		return sc - ply
+		return -mateEval
 	} else if sc > maxEval-maxPly {
-		return sc + ply
+		return mateEval
 	} else {
 		return sc
 	}
@@ -343,9 +343,9 @@ func removeMatePly(sc, ply int) int {
 // addMatePly adjusts mate value with ply if mate score
 func addMatePly(sc, ply int) int {
 	if sc < minEval+maxPly {
-		return sc + ply
-	} else if sc > maxEval+maxPly {
-		return sc - ply
+		return -mateEval + ply
+	} else if sc > maxEval-maxPly {
+		return mateEval - ply
 	}
 	return sc
 }

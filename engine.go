@@ -170,8 +170,6 @@ func root(toEngine chan bool, frEngine chan string) {
 	}
 }
 
-//TODO search: Null Move
-
 //TODO search: Late Move Reduction
 //TODO search: Internal Iterative Depening
 //TODO search: Delta Pruning
@@ -182,6 +180,14 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 	if depth <= 0 {
 		//return signEval(b.stm, evaluate(b))
 		return qs(beta, b)
+	}
+
+	// are we in mate search?
+	if mateSc := addMatePly(mateEval-1, ply); mateSc < beta {
+		beta = mateSc
+		if mateSc <= alpha {
+			return mateSc
+		}
 	}
 	pv.clear()
 	pvNode := depth > 0 && beta != alpha+1
@@ -246,6 +252,7 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 	bm := noMove // best move
 
 	var genInfo = genInfoStruct{sv: 0, ply: ply, transMove: transMove}
+	cntMoves := 0
 	next = nextNormal
 	/*
 		for _, mv := range ml {
@@ -267,7 +274,7 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 		} else {
 			score = -search(-beta, -alpha, depth-1, ply+1, &childPV, b)
 		}
-
+		cntMoves++
 		b.unmove(mv)
 
 		if score > bs {
@@ -304,6 +311,19 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 			return alpha
 		}
 	}
+
+	if cntMoves == 0 { // whe didn't find any legal moves - either mate or stalemate
+		sc := 0      // we could have contempt value here instead
+		if inCheck { // must be a mate
+			sc = -mateEval + ply + 1
+
+		}
+		if useTT {
+			trans.store(b.fullKey(), noMove, transDepth, ply, sc, scoreTypeBetween)
+		}
+		return sc
+	}
+
 	if bm.cmp(transMove) {
 		trans.cBest++
 	}
@@ -871,7 +891,7 @@ func nextNormal(genInfo *genInfoStruct, b *boardStruct) (move, string) {
 
 		return mv, "bad capt"
 	default: // shouldn't happen
-		panic("neve come here! nextNormal sv=" + strconv.Itoa(genInfo.sv))
+		panic("never come here! nextNormal sv=" + strconv.Itoa(genInfo.sv))
 	}
 
 }
@@ -879,10 +899,68 @@ func nextNormal(genInfo *genInfoStruct, b *boardStruct) (move, string) {
 // StartPerft starts the Perft command that generates all moves until the given depth.
 // It counts the leafs only taht is printed out for each possible move from current pos
 func startPerft(depth int, bd *boardStruct) uint64 {
-	return 0
+	if depth <= 0 {
+		fmt.Printf("Total:\t%v\n", 1)
+		return 0
+	}
+
+	transMove := noMove
+	transMove, _, _, _ = trans.retrieve(bd.fullKey(), depth, 0)
+
+	totCount := uint64(0)
+	var genInfo = genInfoStruct{sv: 0, ply: 0, transMove: transMove}
+	next = nextNormal
+	ix := 0
+	for mv, msg := next(&genInfo, bd); mv != noMove; mv, msg = next(&genInfo, bd) {
+		if !bd.move(mv) {
+			continue
+		}
+		dbg := false
+		/*
+			/////////////////////////////////////////////////////////////
+			if mv.fr() == D4 && mv.to() == F4 {
+				dbg = true
+			}
+			/////////////////////////////////////////////////////////////
+		*/
+		count := perft(dbg, depth-1, 1, bd)
+		totCount += count
+		fmt.Printf("%2d: %v \t%v \t%v\n", ix+1, mv.String(), count, msg)
+
+		bd.unmove(mv)
+		ix++
+	}
+	fmt.Println("------------------")
+	fmt.Println()
+	fmt.Printf("Total:\t%v\n", totCount)
+	return totCount
 }
 
-// TODO: TO IMPLEMENT
 func perft(dbg bool, depth, ply int, bd *boardStruct) uint64 {
-	return 0
+	if depth == 0 {
+		return 1
+	}
+
+	transMove := noMove
+	transMove, _, _, _ = trans.retrieve(bd.fullKey(), depth, ply)
+	ix := 0
+	count := uint64(0)
+	var genInfo = genInfoStruct{sv: 0, ply: 0, transMove: transMove}
+	next = nextNormal
+
+	for mv, msg := next(&genInfo, bd); mv != noMove; mv, msg = next(&genInfo, bd) {
+		if !bd.move(mv) {
+			continue
+		}
+		_ = msg
+		deb := false
+
+		cnt := perft(deb, depth-1, ply+1, bd)
+		count += cnt
+
+		bd.unmove(mv)
+		ix++
+	}
+
+	return count
 }
