@@ -14,9 +14,10 @@ const (
 
 var cntNodes uint64
 
+// type pvLIst START
+
 //TODO search limits: count nodes and test for limit.nodes
 //TODO search limits: limit.depth
-
 //TODO search limits: time per game w/wo increments
 //TODO search limits: time per x moves and after x moves w/wo increments
 type searchLimits struct {
@@ -54,6 +55,9 @@ func (s *searchLimits) setInfinite(b bool) {
 	s.infinite = b
 }
 
+// type pvLIst END
+
+// type pvLIst START
 type pvList []move
 
 func (pv *pvList) new() {
@@ -78,6 +82,36 @@ func (pv *pvList) catenate(mv move, pv2 *pvList) {
 	pv.addPV(pv2)
 }
 
+// type pvLIst END
+
+// ebf struct START
+type ebfStruct []uint64
+
+func (e *ebfStruct) new() {
+	*e = make(ebfStruct, 0, maxDepth)
+}
+func (e *ebfStruct) add(nodes uint64) {
+	*e = append(*e, nodes)
+}
+func (e *ebfStruct) clear() {
+	*e = (*e)[:0]
+}
+func (e *ebfStruct) ebf(depth int) float64 {
+	if len(*e) < 4 {
+		return 0
+	}
+	ebf := 0.0
+	nodes := float64((*e)[len(*e)-1]) // the last depth
+	prevNodes := float64((*e)[len(*e)-2])
+
+	if nodes > 0.0 && prevNodes > 0.0 {
+		//		ebf = (prevNodes2/prevNodes3 + prevNodes1/prevNodes2) / 2
+		ebf = nodes / prevNodes
+	}
+	fmt.Printf("ebf: %0.2f age=%v Used=%v Stored: %v Tried: %v Found: %v Prunes: %v Best: %v\n", ebf, trans.age, trans.cntUsed, trans.cStores, trans.cTried, trans.cFound, trans.cPrune, trans.cBest)
+	return ebf
+}
+
 func (pv *pvList) String() string {
 	s := ""
 	for _, mv := range *pv {
@@ -85,6 +119,8 @@ func (pv *pvList) String() string {
 	}
 	return s
 }
+
+// ebf struct END
 
 func engine() (toEngine chan bool, frEngine chan string) {
 	frEngine = make(chan string)
@@ -97,25 +133,34 @@ func engine() (toEngine chan bool, frEngine chan string) {
 //TODO root: Aspiration search
 func root(toEngine chan bool, frEngine chan string) {
 	var depth, alpha, beta int
+	var ebfTab ebfStruct // WHAT?
 	var pv pvList
 	var childPV pvList
 	var ml moveList
 	childPV.new()
 	pv.new()
 	ml.new(60)
+	ebfTab.new()
 	b := &board
 	for range toEngine {
 		limits.startTime, limits.lastTime = time.Now(), time.Now()
 		cntNodes = 0
-
+		ebfTab.clear() // WHAT?
 		killers.clear()
 		ml.clear()
 		pv.clear()
+
 		trans.initSearch() // increase age counters=0
+
 		genAndSort(0, b, &ml)
+		depth = 0
+
+		transDepth := 0
+		inCheck := b.isAttacked(b.King[b.stm], b.stm.opp())
+
 		bm := ml[0]
 		bs := noScore
-		depth = limits.depth
+
 		for depth = 1; depth <= limits.depth && !limits.stop; depth++ {
 			ml.sort()
 			bs = noScore // bm keeps the best from prev iteration in case of immediate stop before first is done in this iterastion
@@ -124,16 +169,33 @@ func root(toEngine chan bool, frEngine chan string) {
 				childPV.clear()
 
 				b.move(mv)
-				tell("info depth ", strconv.Itoa(depth), " currmove ", mv.String(), " currmovenumber ", strconv.Itoa(ix+1))
+				tell(fmt.Sprintf("info depth %v currmove %v currmovenumber %v", depth, mv.String(), ix+1))
+				lmrRed := 0
+				ext := 0 // TODO: make extention function
+				if ext == 0 {
+					lmrRed = lmr(mv, inCheck, depth, ix+1, ix, b)
+				}
 
-				score := -search(-beta, -alpha, depth-1, 1, &childPV, b)
+				score := noScore
+				if ix == 0 { //only for first depth (root)
+					score = -search(-beta, -alpha, depth-1+ext, 1, &childPV, b)
+				} else { // check null moves first with null window
+
+					score = -search(-alpha-1, -alpha, depth-1+ext-lmrRed, 1, &childPV, b)
+					if score > alpha && !limits.stop { // re-search due to PVS and/or lmr
+						score = -search(-beta, -alpha, depth-1+ext, 1, &childPV, b)
+					}
+				}
+
 				b.unmove(mv)
 
 				//////////////// test only ////////////////////
-				if !checkKey(b) {
-					fmt.Println("fullkey=", b.fullKey(), "Key", b.key, mv.StringFull())
-					fmt.Println("INVALID KEY AFTER UNMOVE ROOT")
-				}
+				/*
+					if !checkKey(b) {
+						fmt.Println("fullkey=", b.fullKey(), "Key", b.key, mv.StringFull())
+						fmt.Println("INVALID KEY AFTER UNMOVE ROOT")
+					}
+				*/
 				///////////////////////////////////////
 
 				if limits.stop {
@@ -146,31 +208,38 @@ func root(toEngine chan bool, frEngine chan string) {
 
 					bm = ml[ix]
 					alpha = score
+					transDepth = depth
 					if depth >= 0 {
-						trans.store(b.fullKey(), mv, depth, 0, score, scoreTypeLower)
+						trans.store(b.fullKey(), mv, transDepth, 0, score, scoreTypeLower)
 					}
 					t1 := time.Since(limits.startTime)
 					tell(fmt.Sprintf("info score cp %v depth %v nodes %v time %v pv ", bm.eval(), depth, cntNodes, int(t1.Seconds()*1000)), pv.String())
 				}
 
 			}
+			if limits.stop {
+				ebfTab.add(cntNodes)
+			}
 
-		}
+		} // END ID
 		ml.sort()
-		trans.store(b.fullKey(), bm, depth-1, 0, bs, scoreType(bs, alpha, beta))
+
+		trans.store(b.fullKey(), bm, transDepth, 0, bs, scoreType(bs, alpha, beta))
+
 		// time, nps, ebf
 		t1 := time.Since(limits.startTime)
 		nps := float64(0)
 		if t1.Seconds() != 0 {
 			nps = float64(cntNodes) / t1.Seconds()
 		}
-
+		ebfTab.ebf(transDepth)
 		tell(fmt.Sprintf("info score cp %v depth %v nodes %v  time %v nps %v pv %v", bm.eval(), depth-1, cntNodes, int(t1.Seconds()*1000), uint(nps), pv.String()))
 		frEngine <- fmt.Sprintf("bestmove %v%v", sq2Fen[bm.fr()], sq2Fen[bm.to()])
 	}
 }
 
 //TODO search: Late Move Reduction
+
 //TODO search: Internal Iterative Depening
 //TODO search: Delta Pruning
 //TODO search: more complicated time handling schemes
@@ -191,7 +260,6 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 	}
 	pv.clear()
 	pvNode := depth > 0 && beta != alpha+1
-	// pvNode := depth > 0 && beta != alpha+1
 
 	transMove := noMove
 	useTT := depth >= 0
@@ -205,13 +273,13 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 	if useTT {
 		var transSc, scType int
 		ok := false
-		key := b.fullKey() // ep and castling included
-		if transMove, transSc, scType, ok = trans.retrieve(key, transDepth, ply); ok && !pvNode {
+
+		if transMove, transSc, scType, ok = trans.retrieve(b.fullKey(), transDepth, ply); ok && !pvNode {
 			switch {
-			case scType == scoreTypeLower && transSc >= alpha:
+			case scType == scoreTypeLower && transSc >= beta:
 				trans.cPrune++
 				return transSc
-			case scType == scoreTypeLower && transSc <= beta:
+			case scType == scoreTypeUpper && transSc <= alpha:
 				trans.cPrune++
 				return transSc
 			case scType == scoreTypeBetween:
@@ -230,6 +298,7 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 	if !pvNode && depth > 0 && !isMateScore(beta) && !inCheck && b.isAntiNullMove() && ev >= beta {
 		nullMv := b.moveNull()
 		sc := minEval
+
 		if depth <= 3 { // static
 			sc = -qs(-beta+1, b)
 		} else { // dynamic
@@ -254,9 +323,7 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 	var genInfo = genInfoStruct{sv: 0, ply: ply, transMove: transMove}
 	cntMoves := 0
 	next = nextNormal
-	/*
-		for _, mv := range ml {
-	*/
+
 	for mv, msg := next(&genInfo, b); mv != noMove; mv, msg = next(&genInfo, b) {
 		_ = msg // to be implemented
 
@@ -265,17 +332,24 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 		}
 
 		childPV.clear()
-
-		if pvNode && bm != noMove {
-			score = -search(-alpha-1, -alpha, depth-1, ply+1, &childPV, b)
-			if score > alpha {
-				score = -search(-beta, -alpha, depth-1, ply+1, &childPV, b)
-			}
-		} else {
-			score = -search(-beta, -alpha, depth-1, ply+1, &childPV, b)
+		lmrRed := 0
+		ext := 0 // TODO: make extention function
+		if ext == 0 {
+			lmrRed = lmr(mv, inCheck, depth, genInfo.sv, cntMoves, b)
 		}
-		cntMoves++
+
+		if pvNode && cntMoves == 0 {
+			score = -search(-beta, -alpha, depth-1+ext, ply+1, &childPV, b)
+
+		} else {
+			score = -search(-alpha-1, -alpha, depth-1+ext-lmrRed, ply+1, &childPV, b)
+			if score > alpha {
+				score = -search(-beta, -alpha, depth-1+ext, ply+1, &childPV, b)
+			}
+		}
+
 		b.unmove(mv)
+		cntMoves++
 
 		if score > bs {
 			bs = score
@@ -301,10 +375,24 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 				return score
 			}
 		}
-		if time.Since(limits.lastTime) >= time.Duration(time.Second) {
+
+		tStep := time.Since(limits.lastTime) - time.Duration(time.Millisecond*200)
+		if tStep >= 0 {
+			limits.lastTime = time.Now().Add(-time.Duration(tStep))
 			t1 := time.Since(limits.startTime)
-			tell(fmt.Sprintf("info time %v nodes %v nps %v", int(t1.Seconds()*1000), cntNodes, cntNodes/uint64(t1.Seconds())))
-			limits.lastTime = time.Now()
+			ms := uint64(t1.Nanoseconds() / 1000000)
+			if t1.Seconds() > 1 {
+				if ms%1000 <= 5 {
+					tell(fmt.Sprintf("info time %v nodes %v nps %v", ms, cntNodes, cntNodes/uint64(t1.Seconds())))
+				}
+			}
+			if ms >= uint64(limits.moveTime)-200 {
+				// fmt.Println("t1", uint64(t1.Nanoseconds()/1000000)-100, "limit", uint64(limits.moveTime))
+				limits.stop = true
+			}
+
+			// tell(fmt.Sprintf("info time %v nodes %v nps %v", int(t1.Seconds()*1000), cntNodes, cntNodes/uint64(t1.Seconds())))
+			// limits.lastTime = time.Now()
 		}
 
 		if limits.stop {
@@ -328,6 +416,21 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 		trans.cBest++
 	}
 	return bs
+}
+
+// compute late mive reduction
+func lmr(mv move, inCheck bool, depth, sv, cntMoves int, b *boardStruct) int {
+	interesting := inCheck || mv.cp() != empty || mv.pr() != empty || b.isAttacked(b.King[b.stm], b.stm.opp()) || (b.stm == WHITE && mv.pc() == wP && mv.to() >= A6) || (b.stm == BLACK && mv.pc() == bP && mv.to() <= A3) // even big threats? castling?
+	red := 0
+	if !interesting && depth >= 3 && sv > nextFirstNonCp {
+		red = 1
+		if depth >= 5 && sv >= nextFirstNonCp {
+			red = depth / 3
+		}
+	}
+
+	return red
+
 }
 
 func (b *boardStruct) isAntiNullMove() bool {
@@ -707,7 +810,7 @@ const (
 // implement genInfoStruct
 type genInfoStruct struct {
 	// to be filed in, before first call to the next function
-	sv, ply   int
+	sv, ply   int // state factor
 	transMove move
 
 	// handle by the next-function
