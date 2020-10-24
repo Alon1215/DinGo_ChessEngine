@@ -2,6 +2,11 @@ package main
 
 import "strings"
 
+const (
+	name   = "DinGo"
+	author = "Alon Michaeli"
+)
+
 func main() {
 	tell("info string Hello DinGo")
 

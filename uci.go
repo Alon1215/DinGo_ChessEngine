@@ -126,6 +126,7 @@ func handleIsReady() {
 
 func handleNewgame() {
 	board.newGame()
+	history.clear()
 }
 
 func handlePosition(cmd string) {
