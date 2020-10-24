@@ -32,7 +32,7 @@ type searchLimits struct {
 	stop bool
 }
 
-var limits searchLimits
+var limits SearchLimits
 
 func (s *searchLimits) init() {
 	s.depth = 9999
@@ -42,17 +42,77 @@ func (s *searchLimits) init() {
 	s.stop = false
 }
 
-func (s *searchLimits) setStop(st bool) {
-	s.stop = st
+func (s *SearchLimits) setStop(st bool) {
+	s.Stop = st
 }
-func (s *searchLimits) setDepth(d int) {
-	s.depth = d
+func (s *SearchLimits) setDepth(d int) {
+	s.Depth = d
 }
-func (s *searchLimits) setMoveTime(m int) {
-	s.moveTime = m
+func (s *SearchLimits) setMoveTime(m int) {
+	s.MoveTime = m
 }
-func (s *searchLimits) setInfinite(b bool) {
-	s.infinite = b
+func (s *SearchLimits) setInfinite(b bool) {
+	s.Infinite = b
+}
+
+// ParseLimits update limits if needed
+func (s *SearchLimits) ParseLimits(args []string, toEng chan bool) (out SearchLimits, ok bool) {
+	ok = true
+	out.init()
+	if len(args) == 0 {
+		tell("info string suppose go infinite")
+		limits.Infinite = true
+	} else {
+		for i := 0; i < len(args); i++ {
+			switch args[i] {
+			case "ponder":
+				out.Ponder = true
+			case "wtime":
+				out.WhiteTime, _ = strconv.Atoi(args[i+1])
+				i++
+			case "btime":
+				out.BlackTime, _ = strconv.Atoi(args[i+1])
+				i++
+			case "winc":
+				out.WhiteIncrement, _ = strconv.Atoi(args[i+1])
+				i++
+			case "binc":
+				out.BlackIncrement, _ = strconv.Atoi(args[i+1])
+				i++
+			case "movestogo":
+				out.MovesToGo, _ = strconv.Atoi(args[i+1])
+				i++
+			case "depth":
+				out.Depth, _ = strconv.Atoi(args[i+1])
+				i++
+			case "nodes":
+				out.Nodes, _ = strconv.Atoi(args[i+1])
+				i++
+			case "mate":
+				out.Mate, _ = strconv.Atoi(args[i+1])
+				i++
+			case "movetime":
+				out.MoveTime, _ = strconv.Atoi(args[i+1])
+				i++
+			case "infinite":
+				out.Infinite = true
+			default:
+				ok = false
+			}
+			//toEng <- true
+		}
+	}
+	if !out.Infinite && out.WhiteTime != -1 && out.BlackTime != -1 {
+		timeSum := out.WhiteTime + out.BlackTime
+		if timeSum > 1800000 {
+			out.MoveTime = 3000
+		} else if timeSum > 500000 {
+			out.MoveTime = 6000
+		} else {
+			out.MoveTime = 3000
+		}
+	}
+	return
 }
 
 // type pvLIst END
@@ -122,7 +182,8 @@ func (pv *pvList) String() string {
 
 // ebf struct END
 
-func engine() (toEngine chan bool, frEngine chan string) {
+// Engine returns 2 channels (from and to). plus, initial root() thread
+func Engine() (toEngine chan bool, frEngine chan string) {
 	frEngine = make(chan string)
 	toEngine = make(chan bool)
 	go root(toEngine, frEngine)
@@ -161,7 +222,7 @@ func root(toEngine chan bool, frEngine chan string) {
 		bm := ml[0]
 		bs := noScore
 
-		for depth = 1; depth <= limits.depth && !limits.stop; depth++ {
+		for depth = 1; depth <= limits.Depth && !limits.Stop; depth++ {
 			ml.sort()
 			bs = noScore // bm keeps the best from prev iteration in case of immediate stop before first is done in this iterastion
 			alpha, beta = minEval, maxEval
@@ -182,7 +243,7 @@ func root(toEngine chan bool, frEngine chan string) {
 				} else { // check null moves first with null window
 
 					score = -search(-alpha-1, -alpha, depth-1+ext-lmrRed, 1, &childPV, b)
-					if score > alpha && !limits.stop { // re-search due to PVS and/or lmr
+					if score > alpha && !limits.Stop { // re-search due to PVS and/or lmr
 						score = -search(-beta, -alpha, depth-1+ext, 1, &childPV, b)
 					}
 				}
@@ -198,7 +259,7 @@ func root(toEngine chan bool, frEngine chan string) {
 				*/
 				///////////////////////////////////////
 
-				if limits.stop {
+				if limits.Stop {
 					break
 				}
 				ml[ix].packEval(score)
@@ -217,7 +278,7 @@ func root(toEngine chan bool, frEngine chan string) {
 				}
 
 			}
-			if limits.stop {
+			if limits.Stop {
 				ebfTab.add(cntNodes)
 			}
 
@@ -386,16 +447,16 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 					tell(fmt.Sprintf("info time %v nodes %v nps %v", ms, cntNodes, cntNodes/uint64(t1.Seconds())))
 				}
 			}
-			if ms >= uint64(limits.moveTime)-200 {
+			if ms >= uint64(limits.MoveTime)-200 {
 				// fmt.Println("t1", uint64(t1.Nanoseconds()/1000000)-100, "limit", uint64(limits.moveTime))
-				limits.stop = true
+				limits.Stop = true
 			}
 
 			// tell(fmt.Sprintf("info time %v nodes %v nps %v", int(t1.Seconds()*1000), cntNodes, cntNodes/uint64(t1.Seconds())))
 			// limits.lastTime = time.Now()
 		}
 
-		if limits.stop {
+		if limits.Stop {
 			return alpha
 		}
 	}

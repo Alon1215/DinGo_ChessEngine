@@ -16,7 +16,7 @@ var low = strings.ToLower
 var saveBm = ""
 
 func uci(input chan string) {
-	toEng, frEng := engine()
+	toEng, frEng := Engine()
 	var cmd string
 	var bm string
 	quit := false
@@ -165,7 +165,7 @@ func handlePosition(cmd string) {
 }
 
 func handleStop() {
-	if limits.infinite {
+	if limits.Infinite {
 		if saveBm != "" {
 			tell(saveBm)
 			saveBm = ""
@@ -182,7 +182,7 @@ func handleQuit() {
 }
 
 func handleBm(bm string) {
-	if limits.infinite {
+	if limits.Infinite {
 		saveBm = bm
 		return
 	}
@@ -218,61 +218,15 @@ func handleSetOption(words []string) {
 //     depth <x>/nodes <x>/movetime <ms>/mate <x>/infinite
 func handleGo(toEng chan bool, words []string) {
 	// TODO: Right now can only handle one of them at a time. We need to be able to mix them
-	limits.init()
-	if len(words) > 1 {
-		words[1] = trim(low(words[1]))
-		switch words[1] {
-		case "searchmoves":
-			tell("info string go searchmoves not implemented")
-		case "ponder":
-			tell("info string go ponder not implemented")
-		case "wtime":
-			tell("info string go wtime not implemented")
-		case "btime":
-			tell("info string go btime not implemented")
-		case "winc":
-			tell("info string go winc not implemented")
-		case "binc":
-			tell("info string go binc not implemented")
-		case "movestogo":
-			tell("info string go movestogo not implemented")
-		case "depth":
-			d := -1
-			err := error(nil)
-			if len(words) >= 3 {
-				d, err = strconv.Atoi(words[2])
-			}
-			if d < 0 || err != nil {
-				tell("info string depth not numeric")
-				return
-			}
-			limits.setDepth(d)
-			toEng <- true
-		case "nodes":
-			tell("info string go nodes not implemented")
-		case "movetime":
-			mt, err := strconv.Atoi(words[2])
-			if err != nil {
-				tell("info string ", words[2], " not numeric")
-				return
-			}
-			limits.setMoveTime(mt)
-			toEng <- true
-		case "mate": // mate <x>  mate in x moves
-			tell("info string go mate not implemented")
-		case "infinite":
-			limits.setInfinite(true)
-			toEng <- true
-		case "register":
-			tell("info string go register not implemented")
-		default:
-			tell("info string go ", words[1], " not implemented")
-		}
+	//limits.init()
+	var ok bool
+	limits, ok = limits.ParseLimits(words[1:], toEng)
+	if !ok {
+		tell("go command invalid")
 	} else {
-		tell("info string suppose go infinite")
-		limits.setInfinite(true)
 		toEng <- true
 	}
+
 }
 
 func handleMyPositions(words []string) {
