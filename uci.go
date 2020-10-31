@@ -103,6 +103,8 @@ func uci(input chan string) {
 			history.print(50)
 		case "moveval": // all moves and values
 			//handleMoveVal() // NOT IMPLEMNTED, (just print command)
+		case "limits":
+			fmt.Println(limits)
 		default:
 			tell("info string unknown cmd ", cmd)
 		}
@@ -217,10 +219,8 @@ func handleSetOption(words []string) {
 // go  searchmoves <move1-moveii>/ponder/wtime <ms>/ btime <ms>/winc <ms>/binc <ms>/movestogo <x>/
 //     depth <x>/nodes <x>/movetime <ms>/mate <x>/infinite
 func handleGo(toEng chan bool, words []string) {
-	// TODO: Right now can only handle one of them at a time. We need to be able to mix them
-	//limits.init()
-	var ok bool
-	limits, ok = limits.ParseLimits(words[1:], toEng)
+
+	ok := limits.ParseLimits(words[1:])
 	if !ok {
 		tell("go command invalid")
 	} else {

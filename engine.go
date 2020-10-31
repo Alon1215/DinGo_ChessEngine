@@ -20,26 +20,60 @@ var cntNodes uint64
 //TODO search limits: limit.depth
 //TODO search limits: time per game w/wo increments
 //TODO search limits: time per x moves and after x moves w/wo increments
-type searchLimits struct {
-	depth     int
-	nodes     uint64
-	moveTime  int // in milliseconds
-	infinite  bool
+// type searchLimits struct {
+// 	depth     int
+// 	nodes     uint64
+// 	moveTime  int // in milliseconds
+// 	infinite  bool
+// 	startTime time.Time
+// 	lastTime  time.Time
+
+// 	//////////////// current //////////
+// 	stop bool
+// }
+
+// var limits SearchLimits
+
+// func (s *searchLimits) init() {
+// 	s.depth = 9999
+// 	s.nodes = math.MaxUint64
+// 	s.moveTime = 99999999999
+// 	s.infinite = false
+// 	s.stop = false
+// }
+
+// SearchLimits sets limits for engine search
+type SearchLimits struct {
 	startTime time.Time
 	lastTime  time.Time
 
-	//////////////// current //////////
-	stop bool
+	Ponder         bool
+	Infinite       bool
+	WhiteTime      int
+	BlackTime      int
+	WhiteIncrement int
+	BlackIncrement int
+	MoveTime       int
+	MovesToGo      int
+	Depth          int
+	Nodes          int
+	Mate           int
+	Stop           bool
 }
 
 var limits SearchLimits
 
-func (s *searchLimits) init() {
-	s.depth = 9999
-	s.nodes = math.MaxUint64
-	s.moveTime = 99999999999
-	s.infinite = false
-	s.stop = false
+func (s *SearchLimits) init() {
+	s.Depth = 9999
+	s.Nodes = math.MaxInt64
+	s.MoveTime = 99999999999
+	s.MovesToGo = 30
+	s.WhiteIncrement = 0
+	s.BlackIncrement = 0
+	s.Infinite = false
+	s.Stop = false
+	s.WhiteTime = -1
+	s.BlackTime = -1
 }
 
 func (s *SearchLimits) setStop(st bool) {
@@ -56,9 +90,9 @@ func (s *SearchLimits) setInfinite(b bool) {
 }
 
 // ParseLimits update limits if needed
-func (s *SearchLimits) ParseLimits(args []string, toEng chan bool) (out SearchLimits, ok bool) {
-	ok = true
-	out.init()
+func (s *SearchLimits) ParseLimits(args []string) bool {
+	limits.Stop = false
+
 	if len(args) == 0 {
 		tell("info string suppose go infinite")
 		limits.Infinite = true
@@ -66,56 +100,70 @@ func (s *SearchLimits) ParseLimits(args []string, toEng chan bool) (out SearchLi
 		for i := 0; i < len(args); i++ {
 			switch args[i] {
 			case "ponder":
-				out.Ponder = true
+				limits.Ponder = true
 			case "wtime":
-				out.WhiteTime, _ = strconv.Atoi(args[i+1])
+				limits.WhiteTime, _ = strconv.Atoi(args[i+1])
 				i++
 			case "btime":
-				out.BlackTime, _ = strconv.Atoi(args[i+1])
+				limits.BlackTime, _ = strconv.Atoi(args[i+1])
 				i++
 			case "winc":
-				out.WhiteIncrement, _ = strconv.Atoi(args[i+1])
+				limits.WhiteIncrement, _ = strconv.Atoi(args[i+1])
 				i++
 			case "binc":
-				out.BlackIncrement, _ = strconv.Atoi(args[i+1])
+				limits.BlackIncrement, _ = strconv.Atoi(args[i+1])
 				i++
 			case "movestogo":
-				out.MovesToGo, _ = strconv.Atoi(args[i+1])
+				limits.MovesToGo, _ = strconv.Atoi(args[i+1])
 				i++
 			case "depth":
-				out.Depth, _ = strconv.Atoi(args[i+1])
+				limits.Depth, _ = strconv.Atoi(args[i+1])
 				i++
 			case "nodes":
-				out.Nodes, _ = strconv.Atoi(args[i+1])
+				limits.Nodes, _ = strconv.Atoi(args[i+1])
 				i++
 			case "mate":
-				out.Mate, _ = strconv.Atoi(args[i+1])
+				limits.Mate, _ = strconv.Atoi(args[i+1])
 				i++
 			case "movetime":
-				out.MoveTime, _ = strconv.Atoi(args[i+1])
+				limits.MoveTime, _ = strconv.Atoi(args[i+1])
 				i++
 			case "infinite":
-				out.Infinite = true
+				limits.Infinite = true
 			default:
-				ok = false
+				return false
 			}
-			//toEng <- true
 		}
 	}
-	if !out.Infinite && out.WhiteTime != -1 && out.BlackTime != -1 {
-		timeSum := out.WhiteTime + out.BlackTime
-		if timeSum > 1800000 {
-			out.MoveTime = 3000
-		} else if timeSum > 500000 {
-			out.MoveTime = 6000
-		} else {
-			out.MoveTime = 3000
-		}
-	}
-	return
+	limits.updateMoveTime()
+	return true
 }
 
-// type pvLIst END
+func (s *SearchLimits) updateMoveTime() {
+	if !limits.Infinite {
+		b := &board
+		if b.stm == WHITE {
+			limits.MoveTime = limits.WhiteTime
+
+		} else {
+			limits.MoveTime = limits.BlackTime
+		}
+
+		// set moveTime:
+		if limits.MovesToGo < 5 {
+			limits.MovesToGo = 5 // temp
+		}
+
+		limits.MoveTime = (limits.MoveTime - 5000) / limits.MovesToGo
+
+		fmt.Printf("moveTime %v, WhiteTime %v, BlackTime %v,  MovesToGo %v\n", limits.MoveTime, limits.WhiteTime, limits.BlackTime, limits.MovesToGo)
+		if b.stm == WHITE {
+			limits.WhiteTime = limits.WhiteTime - limits.MoveTime + (limits.WhiteIncrement - 300)
+		} else {
+			limits.BlackTime = limits.BlackTime - limits.MoveTime + (limits.BlackIncrement - 300)
+		}
+	}
+}
 
 // type pvLIst START
 type pvList []move
@@ -205,6 +253,7 @@ func root(toEngine chan bool, frEngine chan string) {
 	b := &board
 	for range toEngine {
 		limits.startTime, limits.lastTime = time.Now(), time.Now()
+		//limits.updateMoveTime()
 		cntNodes = 0
 		ebfTab.clear() // WHAT?
 		killers.clear()
@@ -295,7 +344,10 @@ func root(toEngine chan bool, frEngine chan string) {
 		}
 		ebfTab.ebf(transDepth)
 		tell(fmt.Sprintf("info score cp %v depth %v nodes %v  time %v nps %v pv %v", bm.eval(), depth-1, cntNodes, int(t1.Seconds()*1000), uint(nps), pv.String()))
+		limits.MovesToGo--
+
 		frEngine <- fmt.Sprintf("bestmove %v%v", sq2Fen[bm.fr()], sq2Fen[bm.to()])
+
 	}
 }
 
@@ -447,8 +499,9 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 					tell(fmt.Sprintf("info time %v nodes %v nps %v", ms, cntNodes, cntNodes/uint64(t1.Seconds())))
 				}
 			}
-			if ms >= uint64(limits.MoveTime)-200 {
-				// fmt.Println("t1", uint64(t1.Nanoseconds()/1000000)-100, "limit", uint64(limits.moveTime))
+			fmt.Printf("ms %v, limits.MoveTime %v\n", ms, limits.MoveTime)
+			if ms >= uint64(limits.MoveTime) {
+				fmt.Println("t1", uint64(t1.Nanoseconds()/1000000)-100, "limit", uint64(limits.MoveTime))
 				limits.Stop = true
 			}
 
@@ -479,7 +532,7 @@ func search(alpha, beta, depth, ply int, pv *pvList, b *boardStruct) int {
 	return bs
 }
 
-// compute late mive reduction
+// compute late move reduction
 func lmr(mv move, inCheck bool, depth, sv, cntMoves int, b *boardStruct) int {
 	interesting := inCheck || mv.cp() != empty || mv.pr() != empty || b.isAttacked(b.King[b.stm], b.stm.opp()) || (b.stm == WHITE && mv.pc() == wP && mv.to() >= A6) || (b.stm == BLACK && mv.pc() == bP && mv.to() <= A3) // even big threats? castling?
 	red := 0

@@ -265,7 +265,7 @@ func (b *boardStruct) move(mv move) bool {
 	}
 
 	b.key = ^b.key
-	b.stm = b.stm ^ 0x1
+	b.stm = b.stm ^ 0x1 // update turns (black / white)
 	if b.isAttacked(b.King[b.stm^0x1], b.stm) {
 		b.unmove(mv)
 		return false
@@ -1337,6 +1337,11 @@ func (b *boardStruct) bPawnAtksBB() bitBoard {
 }
 
 //////////////////////////////////// my own commands - NOT UCI /////////////////////////////////////
+// func (b *boardStruct) toFen() {
+// 	var sb strings.Builder
+// 	// sb.WriteString(str)
+
+// }
 
 // print all legal moves
 func (b *boardStruct) printAllLegals() {

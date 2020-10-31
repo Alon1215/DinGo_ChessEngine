@@ -7,7 +7,7 @@ const (
 	noScore  = minEval - 1
 )
 
-var pieceVal = [16]int{100, -100, 325, -325, 350, -350, 500, -500, 950, -950, 10000, -10000, 0, 0, 0, 0}
+var pieceVal = [16]int{100, -100, 300, -300, 350, -350, 500, -500, 1000, -1000, 10000, -10000, 0, 0, 0, 0}
 
 var knightFile = [8]int{-4, -3, -2, +2, +2, 0, -2, -4}
 var knightRank = [8]int{-15, 0, +5, +6, +7, +8, +2, -4}
@@ -50,7 +50,7 @@ func pcSqScore(p12, sq int) int {
 	return pSqTab[p12][sq]
 }
 
-// PstInit intits the pieces-square-tables when the program starts
+// PstInit inits the pieces-square-tables when the program starts
 func pcSqInit() {
 	tell("info string pStInit starter")
 	for p12 := 0; p12 < 12; p12++ {
