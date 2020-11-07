@@ -1,6 +1,6 @@
 # DinGo (chess engine)
 
-![Dingo](https://github.com/Alon1215/DinGo_chess.engine/blob/master/.idea/rsz_1rsz_687457.png?raw=true)
+![Dingo](https://github.com/Alon1215/DinGo_chess.engine/blob/master/.idea/rsz_1rsz_1rsz_1rsz_687457.png?raw=true)
 
 
 Chess engine (following UCI protocol) fully implemented in Go (Golang).
