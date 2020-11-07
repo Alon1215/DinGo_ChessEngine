@@ -1021,7 +1021,7 @@ func (b *boardStruct) genBPawnCapt(ml *moveList) {
 	}
 }
 
-// W pawns moves that doesn't capture aand not promotions
+// W pawns moves that doesn't capture and not promotions
 func (b *boardStruct) genWPawnNonCapt(ml *moveList) {
 	var mv move
 	wPawns := b.pieceBB[Pawn] & b.wbBB[WHITE]
@@ -1044,7 +1044,7 @@ func (b *boardStruct) genWPawnNonCapt(ml *moveList) {
 	}
 }
 
-//B pawns moves that doesn't capture aand not promotions
+//B pawns moves that doesn't capture and not promotions
 func (b *boardStruct) genBPawnNonCapt(ml *moveList) {
 	var mv move
 	bPawns := b.pieceBB[Pawn] & b.wbBB[BLACK]

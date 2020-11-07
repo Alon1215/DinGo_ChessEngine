@@ -344,7 +344,7 @@ func root(toEngine chan bool, frEngine chan string) {
 		}
 		ebfTab.ebf(transDepth)
 		tell(fmt.Sprintf("info score cp %v depth %v nodes %v  time %v nps %v pv %v", bm.eval(), depth-1, cntNodes, int(t1.Seconds()*1000), uint(nps), pv.String()))
-		limits.MovesToGo--
+		//limits.MovesToGo--
 
 		frEngine <- fmt.Sprintf("bestmove %v%v", sq2Fen[bm.fr()], sq2Fen[bm.to()])
 

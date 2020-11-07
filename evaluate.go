@@ -53,39 +53,108 @@ func pcSqScore(p12, sq int) int {
 // PstInit inits the pieces-square-tables when the program starts
 func pcSqInit() {
 	tell("info string pStInit starter")
-	for p12 := 0; p12 < 12; p12++ {
-		for sq := 0; sq < 64; sq++ {
-			pSqTab[p12][sq] = 0
-		}
+	// for p12 := 0; p12 < 12; p12++ {
+	// 	for sq := 0; sq < 64; sq++ {
+	// 		pSqTab[p12][sq] = 0
+	// 	}
+	// }
+
+	// for sq := 0; sq < 64; sq++ {
+
+	// 	fl := sq % 8
+	// 	rk := sq / 8
+
+	// 	pSqTab[wP][sq] = pawnFile[fl] + pawnRank[rk]
+
+	// 	pSqTab[wN][sq] = knightFile[fl] + knightRank[rk]
+	// 	pSqTab[wB][sq] = centerFile[fl] + centerFile[rk]*2
+
+	// 	pSqTab[wR][sq] = centerFile[fl] * 5
+
+	// 	pSqTab[wQ][sq] = centerFile[fl] + centerFile[rk]
+
+	// 	pSqTab[wK][sq] = (kingFile[fl] + kingRank[rk]) * 8
+	// }
+
+	// // bonus for e4 d5 and c4
+	// pSqTab[wP][E2], pSqTab[wP][D2], pSqTab[wP][E3], pSqTab[wP][D3], pSqTab[wP][E4], pSqTab[wP][D4], pSqTab[wP][C4] = 0, 0, 6, 6, 24, 20, 12
+
+	// // long diagonal
+	// for sq := A1; sq <= H8; sq += NE {
+	// 	pSqTab[wB][sq] += longDiag - 2
+	// }
+	// for sq := H1; sq <= A8; sq += NW {
+	// 	pSqTab[wB][sq] += longDiag
+	// }
+
+	pawnScore := [64]int{
+		90, 90, 90, 90, 90, 90, 90, 90,
+		30, 30, 30, 40, 40, 30, 30, 30,
+		20, 20, 20, 30, 30, 30, 20, 20,
+		10, 10, 10, 20, 20, 10, 10, 10,
+		5, 5, 10, 20, 20, 5, 5, 5,
+		0, 0, 0, 5, 5, 0, 0, 0,
+		0, 0, 0, -10, -10, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
 	}
 
-	for sq := 0; sq < 64; sq++ {
-
-		fl := sq % 8
-		rk := sq / 8
-
-		pSqTab[wP][sq] = pawnFile[fl] + pawnRank[rk]
-
-		pSqTab[wN][sq] = knightFile[fl] + knightRank[rk]
-		pSqTab[wB][sq] = centerFile[fl] + centerFile[rk]*2
-
-		pSqTab[wR][sq] = centerFile[fl] * 5
-
-		pSqTab[wQ][sq] = centerFile[fl] + centerFile[rk]
-
-		pSqTab[wK][sq] = (kingFile[fl] + kingRank[rk]) * 8
+	knightScore := [64]int{
+		-5, 0, 0, 0, 0, 0, 0, -5,
+		-5, 0, 0, 10, 10, 0, 0, -5,
+		-5, 5, 20, 20, 20, 20, 5, -5,
+		-5, 10, 20, 30, 30, 20, 10, -5,
+		-5, 10, 20, 30, 30, 20, 10, -5,
+		-5, 5, 20, 10, 10, 20, 5, -5,
+		-5, 0, 0, 0, 0, 0, 0, -5,
+		-5, -10, 0, 0, 0, 0, -10, -5,
+	}
+	bishopScore := [64]int{
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 10, 10, 0, 0, 0,
+		0, 0, 10, 20, 20, 10, 0, 0,
+		0, 0, 10, 20, 20, 10, 0, 0,
+		0, 10, 0, 0, 0, 0, 10, 0,
+		0, 30, 0, 0, 0, 0, 30, 0,
+		0, 0, -10, 0, 0, -10, 0, 0,
+	}
+	rookScore := [64]int{
+		50, 50, 50, 50, 50, 50, 50, 50,
+		50, 50, 50, 50, 50, 50, 50, 50,
+		0, 0, 10, 20, 20, 10, 0, 0,
+		0, 0, 10, 20, 20, 10, 0, 0,
+		0, 0, 10, 20, 20, 10, 0, 0,
+		0, 0, 10, 20, 20, 10, 0, 0,
+		0, 0, 10, 20, 20, 10, 0, 0,
+		0, 0, 0, 20, 20, 0, 0, 0,
+	}
+	kingScore := [64]int{
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 5, 5, 5, 5, 0, 0,
+		0, 5, 5, 10, 10, 5, 5, 0,
+		0, 5, 10, 20, 20, 10, 5, 0,
+		0, 5, 10, 20, 20, 10, 5, 0,
+		0, 0, 5, 10, 10, 5, 0, 0,
+		0, 5, 5, -5, -5, 0, 5, 0,
+		0, 0, 5, 0, -15, 0, 10, 0,
+	}
+	queenScore := [64]int{
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0,
 	}
 
-	// bonus for e4 d5 and c4
-	pSqTab[wP][E2], pSqTab[wP][D2], pSqTab[wP][E3], pSqTab[wP][D3], pSqTab[wP][E4], pSqTab[wP][D4], pSqTab[wP][C4] = 0, 0, 6, 6, 24, 20, 12
-
-	// long diagonal
-	for sq := A1; sq <= H8; sq += NE {
-		pSqTab[wB][sq] += longDiag - 2
-	}
-	for sq := H1; sq <= A8; sq += NW {
-		pSqTab[wB][sq] += longDiag
-	}
+	pSqTab[wP] = pawnScore
+	pSqTab[wN] = knightScore
+	pSqTab[wR] = rookScore
+	pSqTab[wK] = kingScore
+	pSqTab[wB] = bishopScore
+	pSqTab[wQ] = queenScore
 
 	// for Black
 	for pc := Pawn; pc <= King; pc++ {
