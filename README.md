@@ -1,4 +1,8 @@
 # DinGo (chess engine)
+
+![Dingo](https://github.com/Alon1215/DinGo_chess.engine/blob/master/.idea/rsz_1rsz_687457.png?raw=true)
+
+
 Chess engine (following UCI protocol) fully implemented in Go (Golang).
 Built as a part of [Tomer Gonen](https://github.com/yodatk)'s and my chess engines competition which will take place at 30.10.20 . 
 
@@ -22,3 +26,4 @@ Future goals:
 * Principal Variation Search
 * Improve evaluation
 * Implementing deep learning techniques
+
