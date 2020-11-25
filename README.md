@@ -32,5 +32,5 @@ Future goals:
 * Install a Chess GUI which follows the UCI protocol (for example: Arena, Scid).
 * Use the command "go build" to compile the engine (DinGo.exe is already attached to the repository, in case Go is not installed on the computer).
 * In Arena (or other GUI program) go to: Engines-> Manage Engines -> Install new engine. Install the DinGo.exe file.
-* Dingo is installed, and is able to compete.
+* Dingo is installed, and ready to compete.
 * Soon: live bot available (in lichess.com).
